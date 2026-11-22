@@ -120,6 +120,7 @@ async def rate_limit_and_security_headers(request: Request, call_next):
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=500)
     history: Optional[List[Dict[str, str]]] = Field(default_factory=list)
+    force_english: Optional[bool] = False
 
 
 class TTSRequest(BaseModel):
@@ -625,7 +626,7 @@ async def chat_endpoint(payload: ChatRequest):
     if not user_msg:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
-    user_is_urdu = is_roman_urdu(user_msg)
+    user_is_urdu = False if payload.force_english else is_roman_urdu(user_msg)
 
     # STEP 1: Guardrail check
     is_blocked, handoff_reply, detected_reason = check_input_guardrails(user_msg)
@@ -832,12 +833,13 @@ async def voice_assistant(file: UploadFile = File(...)):
     transcript = ""
     if DEEPGRAM_API_KEY and audio_bytes:
         try:
-            url = f"https://api.deepgram.com/v1/listen?model={DEEPGRAM_STT_MODEL}&detect_language=true&smart_format=true"
+            # Direct English language for instant sub-300ms transcription
+            url = f"https://api.deepgram.com/v1/listen?model={DEEPGRAM_STT_MODEL}&language=en&smart_format=true"
             headers = {
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
                 "Content-Type": file.content_type or "audio/webm"
             }
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.post(url, headers=headers, content=audio_bytes)
                 if res.status_code == 200:
                     data = res.json()
@@ -850,7 +852,8 @@ async def voice_assistant(file: UploadFile = File(...)):
     if not transcript:
         transcript = "Tell me about ZaiqaBox plans and delivery."
 
-    chat_result = await chat_endpoint(ChatRequest(message=transcript, history=[]))
+    # Voice assistant responds strictly in English quickly
+    chat_result = await chat_endpoint(ChatRequest(message=transcript, history=[], force_english=True))
     reply = chat_result.get("reply", "")
     handoff = chat_result.get("handoff", False)
     sources = chat_result.get("sources", [])
@@ -863,7 +866,7 @@ async def voice_assistant(file: UploadFile = File(...)):
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
                 "Content-Type": "application/json"
             }
-            body = {"text": reply[:350]}
+            body = {"text": reply[:300]}
             async with httpx.AsyncClient(timeout=8.0) as client:
                 res = await client.post(url, headers=headers, json=body)
                 if res.status_code == 200:
