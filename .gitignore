@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+.DS_Store
+backend/leads_backup.json
+data/sent_emails_log.json
+test_transparent_logo.png
+.vscode/
+.idea/
+venv/
+env/

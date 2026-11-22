@@ -1,0 +1,887 @@
+/**
+ * ZaiqaBox Karachi - Core Site Logic (Dynamic SQL Server / SSMS Sync)
+ * Binds public data, delivery calculator, lead capture, and event tracking.
+ */
+
+document.addEventListener("DOMContentLoaded", () => {
+  initIntroSplash(); // Cinematic Logo Break / Shatter Intro
+  initNavbarAndMobileMenu();
+  renderDynamicConfig();
+  fetchDynamicSiteData(); // Sync live with SQL Server / Admin Panel
+  initDeliveryCalculator();
+  initFaqAccordion();
+  initLeadForm();
+  initEventTracking();
+  initCustomerAuthAndPortal(); // Customer Registration, Login & Portal
+});
+
+function initIntroSplash() {
+  const splash = document.getElementById("introSplash");
+  const skipBtn = document.getElementById("skipSplashBtn");
+  if (!splash) return;
+
+  // ZERO-LAG REFRESH: If user already saw intro in this session, skip immediately!
+  if (sessionStorage.getItem("zaiqabox_intro_seen")) {
+    document.body.classList.remove("splash-loading");
+    splash.style.display = "none";
+    if (splash.parentNode) splash.parentNode.removeChild(splash);
+    return;
+  }
+
+  // Mark as seen for all subsequent refreshes in this session
+  sessionStorage.setItem("zaiqabox_intro_seen", "true");
+
+  let hasEnded = false;
+
+  function shatterAndDismiss() {
+    if (hasEnded) return;
+    hasEnded = true;
+
+    // Trigger crack and break immediately
+    splash.classList.add("cracking");
+    setTimeout(() => {
+      splash.classList.add("shattered");
+      document.body.classList.remove("splash-loading");
+    }, 80);
+
+    setTimeout(() => {
+      splash.classList.add("dismissed");
+    }, 450);
+
+    setTimeout(() => {
+      splash.style.display = "none";
+      if (splash.parentNode) splash.parentNode.removeChild(splash);
+    }, 800);
+  }
+
+  // Click anywhere or tap Skip to break immediately
+  if (skipBtn) {
+    skipBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      shatterAndDismiss();
+    });
+  }
+  splash.addEventListener("click", shatterAndDismiss);
+
+  // Fast & Snappy Automated Timeline (1.3s total instead of 3.5s):
+  // 1. 0.0s - 0.45s: Whole logo displays with ambient glow
+  // 2. 0.5s: Electric golden crack ruptures across the logo
+  setTimeout(() => {
+    if (!hasEnded) splash.classList.add("cracking");
+  }, 500);
+
+  // 3. 0.85s: Full Logo breaks/shatters in two halves & curtains pull open
+  setTimeout(() => {
+    if (!hasEnded) {
+      splash.classList.add("shattered");
+      document.body.classList.remove("splash-loading");
+    }
+  }, 850);
+
+  // 4. 1.35s: Fully uncovers the website smoothly
+  setTimeout(() => {
+    if (!hasEnded) {
+      splash.classList.add("dismissed");
+      setTimeout(() => {
+        splash.style.display = "none";
+        if (splash.parentNode) splash.parentNode.removeChild(splash);
+      }, 500);
+    }
+  }, 1350);
+}
+
+function trackEvent(eventName, params = {}) {
+  if (CONFIG.analytics && CONFIG.analytics.debugMode) {
+    console.log(`[Analytics Event] ${eventName}:`, params);
+  }
+  if (typeof window.gtag === "function" && CONFIG.analytics.googleAnalyticsId) {
+    window.gtag("event", eventName, params);
+  }
+  if (typeof window.fbq === "function" && CONFIG.analytics.metaPixelId) {
+    window.fbq("track", eventName, params);
+  }
+}
+
+function initNavbarAndMobileMenu() {
+  const hamburgerBtn = document.getElementById("hamburgerBtn");
+  const navMenu = document.getElementById("navMenu");
+  const navLinks = document.querySelectorAll(".nav-link");
+
+  if (hamburgerBtn && navMenu) {
+    hamburgerBtn.addEventListener("click", () => {
+      const isOpen = navMenu.classList.toggle("open");
+      hamburgerBtn.classList.toggle("active", isOpen);
+      hamburgerBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    navLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        navMenu.classList.remove("open");
+        hamburgerBtn.classList.remove("active");
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+      });
+    });
+  }
+
+  const yearEl = document.getElementById("currentYear");
+  if (yearEl) {
+    yearEl.textContent = new Date().getFullYear();
+  }
+}
+
+function createWhatsAppUrl(message) {
+  const phone = (CONFIG.brand && CONFIG.brand.whatsappNumber) || "923001234567";
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+// Fetch live data from SQL Server (ZaiqaBoxDB)
+async function fetchDynamicSiteData() {
+  try {
+    const res = await fetch("/api/site/data");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // 1. Update announcement text if changed
+    if (data.settings && data.settings.announcement_text) {
+      const el = document.getElementById("announcementText");
+      if (el) el.innerHTML = data.settings.announcement_text;
+    }
+
+    // 2. Render live menu items with images, descriptions and star ratings
+    if (data.menu && data.menu.length > 0) {
+      renderLiveMenu(data.menu);
+    }
+
+    // 3. Update plans if returned from database
+    if (data.plans && data.plans.length > 0) {
+      renderPlansFromDB(data.plans);
+    }
+
+    // 4. Update customer reviews / testimonials
+    if (data.testimonials && data.testimonials.length > 0) {
+      renderTestimonialsFromDB(data.testimonials);
+    }
+
+    // 5. Update FAQs
+    if (data.faqs && data.faqs.length > 0) {
+      renderFaqsFromDB(data.faqs);
+    }
+
+    // 6. Update Promo Video if set
+    if (data.promo_video && data.promo_video.src) {
+      const vid = document.getElementById("kitchenVideoPlayer");
+      if (vid && data.promo_video.src) {
+        vid.src = data.promo_video.src;
+        if (data.promo_video.poster) vid.poster = data.promo_video.poster;
+      }
+    }
+  } catch (err) {
+    console.warn("[Site Data Sync] Using local config fallback.", err);
+  }
+}
+
+function renderTestimonialsFromDB(testimonials) {
+  const container = document.getElementById("testimonialsGrid");
+  if (!container || !testimonials || testimonials.length === 0) return;
+
+  container.innerHTML = testimonials.map(t => {
+    const starCount = Math.round(t.Rating || 5);
+    const stars = "★".repeat(starCount);
+    return `
+      <div class="testimonial-card">
+        <div class="testimonial-rating" style="color: #F5A623;">${stars}</div>
+        <p class="testimonial-text">"${t.ReviewText}"</p>
+        <div class="testimonial-author">
+          <strong>${t.CustomerName}</strong>
+          <span>${t.CompanyArea}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderFaqsFromDB(faqs) {
+  const container = document.getElementById("faqAccordion");
+  if (!container || !faqs || faqs.length === 0) return;
+
+  container.innerHTML = faqs.map(f => `
+    <div class="faq-item">
+      <button class="faq-question-btn" type="button" aria-expanded="false">
+        <span>${f.Question}</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer">
+        ${f.Answer}
+      </div>
+    </div>
+  `).join('');
+
+  initFaqAccordion();
+}
+
+// Render menu items with rich photos, star ratings, and full descriptions
+function renderLiveMenu(menuItems) {
+  const menuContainer = document.getElementById("menuGrid");
+  if (!menuContainer) return;
+
+  menuContainer.innerHTML = menuItems.map(dish => {
+    const stars = "★".repeat(Math.round(dish.Rating || 5));
+    const waOrderMsg = `Hi ZaiqaBox! I would like to order the ${dish.DayOfWeek} special: ${dish.Title}. Please confirm delivery.`;
+    const waUrl = createWhatsAppUrl(waOrderMsg);
+
+    return `
+      <div class="menu-card">
+        <div class="menu-card-img-wrap">
+          <img src="${dish.ImageUrl}" alt="${dish.Title}" class="menu-card-img" onerror="this.src='assets/menu/monday_tikka_bowl.jpg'">
+          <div class="menu-card-badge">${dish.Badge || 'Nutritionist Choice'}</div>
+          <div class="menu-card-day">${dish.DayOfWeek}</div>
+        </div>
+        <div class="menu-card-body">
+          <div class="menu-rating-row">
+            <span class="star-rating">${stars}</span>
+            <strong style="color: var(--walnut); font-size: 0.95rem;">${dish.Rating || 4.9}</strong>
+            <span class="rating-count">(${dish.ReviewsCount || 120}+ reviews)</span>
+          </div>
+          <h3 class="menu-dish-title">${dish.Title}</h3>
+          <p class="menu-dish-desc">${dish.Description}</p>
+          <div class="menu-sides-box">
+            <strong>Sides:</strong> ${dish.Sides}
+          </div>
+          <div class="menu-macros-row">
+            <span>🔥 ${dish.Calories} kcal</span>
+            <span>🥩 ${dish.ProteinGrams}g Protein</span>
+            <span>⚖️ Portion-Controlled</span>
+          </div>
+          <a href="${waUrl}" class="btn btn-whatsapp btn-block menu-order-dish-btn" target="_blank" rel="noopener" onclick="trackEvent('whatsapp_click', { dish: '${dish.Title}' })">
+            <span>💬</span> Order ${dish.DayOfWeek}'s Lunch
+          </a>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPlansFromDB(dbPlans) {
+  const pricingGrid = document.getElementById("pricingGrid");
+  if (!pricingGrid) return;
+
+  pricingGrid.innerHTML = dbPlans.map(plan => {
+    const formattedPrice = `PKR ${parseFloat(plan.Price).toLocaleString()}`;
+    const perMealCalc = `PKR ${Math.round(plan.Price / plan.LunchesCount).toLocaleString()} / meal`;
+    const waMsg = `Hi ZaiqaBox! I want to order the ${plan.Name} (${formattedPrice} for ${plan.LunchesCount} lunches). Please confirm delivery.`;
+    const waUrl = createWhatsAppUrl(waMsg);
+
+    return `
+      <div class="plan-card ${plan.IsPopular ? 'featured' : ''}">
+        ${plan.Badge ? `<div class="plan-badge">${plan.Badge}</div>` : ''}
+        <div class="plan-header">
+          <h3 class="plan-name">${plan.Name}</h3>
+          <div class="plan-period">${plan.PeriodText}</div>
+          <div class="plan-price-wrap">
+            <span class="plan-price">${formattedPrice}</span>
+            <div class="plan-per-meal">${perMealCalc}</div>
+          </div>
+        </div>
+        <p class="plan-desc">${plan.Description}</p>
+        <ul class="plan-features">
+          ${(plan.features || []).map(f => `<li>${f}</li>`).join('')}
+        </ul>
+        <a href="${waUrl}" class="btn ${plan.IsPopular ? 'btn-accent' : 'btn-primary'} btn-block" target="_blank" rel="noopener" onclick="trackEvent('whatsapp_click', { plan: '${plan.PlanCode}' })">
+          <svg viewBox="0 0 448 512" width="18" height="18" fill="currentColor" style="vertical-align: middle; margin-right: 6px;"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
+          <span>Order on WhatsApp</span>
+        </a>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDynamicConfig() {
+  const heroWhatsappBtn = document.getElementById("heroWhatsappBtn");
+  if (heroWhatsappBtn) {
+    const heroMsg = "Hi ZaiqaBox! I am interested in your nutritionist-reviewed corporate lunch boxes. Please share today's menu and subscription details.";
+    heroWhatsappBtn.href = createWhatsAppUrl(heroMsg);
+    heroWhatsappBtn.addEventListener("click", () => trackEvent("whatsapp_click", { location: "hero" }));
+  }
+
+  const floatingWhatsapp = document.getElementById("floatingWhatsapp");
+  if (floatingWhatsapp) {
+    floatingWhatsapp.href = createWhatsAppUrl("Hi ZaiqaBox! I want to inquire about your corporate lunch subscription.");
+    floatingWhatsapp.addEventListener("click", () => trackEvent("whatsapp_click", { location: "floating" }));
+  }
+
+  const footerWhatsapp = document.getElementById("footerWhatsappLink");
+  if (footerWhatsapp) {
+    footerWhatsapp.href = createWhatsAppUrl("Hi ZaiqaBox! I would like to order or ask about corporate delivery.");
+  }
+
+  // Delivery Zones Initial
+  const deliveryZonesGrid = document.getElementById("deliveryZonesGrid");
+  if (deliveryZonesGrid && CONFIG.delivery && CONFIG.delivery.zonesInfo) {
+    deliveryZonesGrid.innerHTML = CONFIG.delivery.zonesInfo.map(zone => {
+      const isFree = zone.status.toLowerCase().includes("free");
+      return `
+        <div class="zone-card">
+          <span class="zone-status ${isFree ? 'free' : 'paid'}">${zone.status}</span>
+          <h3 class="zone-name">${zone.name}</h3>
+          <p class="zone-coverage">${zone.phases}</p>
+          <div class="zone-time">⏰ Arrives ${zone.timing}</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function initDeliveryCalculator() {
+  const areaSelect = document.getElementById("calcAreaSelect");
+  const planSelect = document.getElementById("calcPlanSelect");
+  const basePriceEl = document.getElementById("calcBasePrice");
+  const deliveryFeeEl = document.getElementById("calcDeliveryFee");
+  const deliveryNoteEl = document.getElementById("calcDeliveryNote");
+  const totalPriceEl = document.getElementById("calcTotalPrice");
+  const calcOrderBtn = document.getElementById("calcOrderBtn");
+
+  function updateCalculation() {
+    if (!areaSelect || !planSelect) return;
+
+    const selectedArea = areaSelect.value;
+    const selectedPlanId = planSelect.value;
+    const plan = CONFIG.plans.find(p => p.id === selectedPlanId) || CONFIG.plans[0];
+
+    const isFreeZone = CONFIG.delivery.freeZones.includes(selectedArea);
+    const outsideFeePerDay = CONFIG.delivery.outsideZoneFeePerDay;
+    const totalDeliveryFee = isFreeZone ? 0 : outsideFeePerDay * plan.lunches;
+    const grandTotal = plan.price + totalDeliveryFee;
+
+    basePriceEl.textContent = plan.formattedPrice;
+
+    if (isFreeZone) {
+      deliveryFeeEl.textContent = "PKR 0 (Free Delivery)";
+      deliveryNoteEl.className = "delivery-badge-note free";
+      deliveryNoteEl.textContent = `✅ Free delivery in ${selectedArea} between 12:30 PM and 1:30 PM!`;
+    } else {
+      deliveryFeeEl.textContent = `PKR ${totalDeliveryFee.toLocaleString()} (PKR ${outsideFeePerDay}/day × ${plan.lunches} lunches)`;
+      deliveryNoteEl.className = "delivery-badge-note paid";
+      deliveryNoteEl.textContent = `⚠️ Outside free zones: PKR ${outsideFeePerDay}/day delivery charge applies.`;
+    }
+
+    totalPriceEl.textContent = `PKR ${grandTotal.toLocaleString()}`;
+
+    const orderMsg = `Hi ZaiqaBox! I used the calculator and want to order:\nPlan: ${plan.name} (${plan.formattedPrice})\nArea: ${selectedArea}\nDelivery: ${isFreeZone ? 'Free' : `PKR ${totalDeliveryFee.toLocaleString()}`}\nTotal: PKR ${grandTotal.toLocaleString()}.\nPlease confirm delivery.`;
+    calcOrderBtn.href = createWhatsAppUrl(orderMsg);
+  }
+
+  if (areaSelect && planSelect) {
+    areaSelect.addEventListener("change", updateCalculation);
+    planSelect.addEventListener("change", updateCalculation);
+    updateCalculation();
+  }
+
+  if (calcOrderBtn) {
+    calcOrderBtn.addEventListener("click", () => {
+      trackEvent("whatsapp_click", {
+        location: "calculator",
+        area: areaSelect.value,
+        plan: planSelect.value
+      });
+    });
+  }
+}
+
+function initFaqAccordion() {
+  const faqItems = document.querySelectorAll(".faq-item");
+
+  faqItems.forEach(item => {
+    const btn = item.querySelector(".faq-question-btn");
+    btn.addEventListener("click", () => {
+      const isActive = item.classList.contains("active");
+      faqItems.forEach(other => {
+        other.classList.remove("active");
+        const otherBtn = other.querySelector(".faq-question-btn");
+        if (otherBtn) otherBtn.setAttribute("aria-expanded", "false");
+      });
+      if (!isActive) {
+        item.classList.add("active");
+        btn.setAttribute("aria-expanded", "true");
+        trackEvent("faq_opened", { question: btn.textContent.trim() });
+      }
+    });
+  });
+}
+
+function initLeadForm() {
+  const form = document.getElementById("leadForm");
+  const successState = document.getElementById("leadSuccessState");
+  const submitBtn = document.getElementById("leadSubmitBtn");
+  const btnText = document.getElementById("leadBtnText");
+  const btnSpinner = document.getElementById("leadBtnSpinner");
+  const manualDownloadBtn = document.getElementById("leadManualDownloadBtn");
+  const successWhatsappBtn = document.getElementById("leadSuccessWhatsappBtn");
+
+  if (!form) return;
+
+  const nameInput = document.getElementById("leadName");
+  const emailInput = document.getElementById("leadEmail");
+  const whatsappInput = document.getElementById("leadWhatsapp");
+  const areaSelect = document.getElementById("leadArea");
+  const planSelect = document.getElementById("leadPlan");
+  const consentCheckbox = document.getElementById("leadConsent");
+
+  const nameError = document.getElementById("nameError");
+  const emailError = document.getElementById("emailError");
+  const whatsappError = document.getElementById("whatsappError");
+  const consentError = document.getElementById("consentError");
+
+  function isValidPakistaniPhone(phone) {
+    const clean = phone.replace(/[\s\-\(\)]/g, "");
+    return /^(\+92|92|0)?3[0-9]{9}$/.test(clean);
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    nameError.classList.remove("visible");
+    emailError.classList.remove("visible");
+    whatsappError.classList.remove("visible");
+    consentError.classList.remove("visible");
+
+    let hasError = false;
+
+    if (!nameInput.value.trim() || nameInput.value.trim().length < 2) {
+      nameError.classList.add("visible");
+      hasError = true;
+    }
+
+    if (!isValidEmail(emailInput.value.trim())) {
+      emailError.classList.add("visible");
+      hasError = true;
+    }
+
+    if (!isValidPakistaniPhone(whatsappInput.value.trim())) {
+      whatsappError.classList.add("visible");
+      hasError = true;
+    }
+
+    if (!consentCheckbox.checked) {
+      consentError.classList.add("visible");
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    submitBtn.disabled = true;
+    btnText.style.display = "none";
+    btnSpinner.style.display = "inline";
+
+    const payload = {
+      name: nameInput.value.trim(),
+      email: emailInput.value.trim(),
+      whatsapp: whatsappInput.value.trim(),
+      area: areaSelect.value,
+      plan: planSelect.value,
+      consent: true
+    };
+
+    try {
+      const response = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        trackEvent("form_submit", {
+          area: payload.area,
+          plan: payload.plan
+        });
+
+        form.style.display = "none";
+        successState.style.display = "block";
+
+        const downloadUrl = data.download_url || "assets/office_lunch_guide.pdf";
+        triggerPdfDownload(downloadUrl);
+
+        if (manualDownloadBtn) {
+          manualDownloadBtn.href = downloadUrl;
+          manualDownloadBtn.addEventListener("click", () => {
+            trackEvent("pdf_download", { trigger: "manual_click" });
+          });
+        }
+
+        if (successWhatsappBtn) {
+          const successMsg = `Hi ZaiqaBox! I just downloaded the nutrition guide. I am from ${payload.area} and interested in the ${payload.plan}. Please share your weekly subscription details!`;
+          successWhatsappBtn.href = createWhatsAppUrl(successMsg);
+        }
+      } else {
+        alert(data.detail || data.message || "Failed to submit. Please check your information and try again.");
+      }
+    } catch (err) {
+      console.error("[Lead Form Error]", err);
+      alert("A network error occurred. Please try again or message us on WhatsApp.");
+    } finally {
+      submitBtn.disabled = false;
+      btnText.style.display = "inline";
+      btnSpinner.style.display = "none";
+    }
+  });
+}
+
+function triggerPdfDownload(url) {
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ZaiqaBox_Office_Nutrition_Guide.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    trackEvent("pdf_download", { trigger: "auto_download" });
+  } catch (e) {
+    console.error("[Download Error]", e);
+  }
+}
+
+function initEventTracking() {
+  const guideLinks = document.querySelectorAll('a[href="#lead-capture"]');
+  guideLinks.forEach(link => {
+    link.addEventListener("click", () => {
+      trackEvent("guide_cta_clicked", { source: link.id || "nav_or_hero" });
+    });
+  });
+}
+
+/**
+ * Customer User Registration, Login & Portal Management
+ */
+let currentCustomer = null;
+
+function initCustomerAuthAndPortal() {
+  const authModal = document.getElementById("userAuthModal");
+  const dashModal = document.getElementById("customerDashboardModal");
+  const openAuthBtn = document.getElementById("openAuthModalBtn");
+  const closeAuthBtn = document.getElementById("closeAuthModalBtn");
+  const openDashBtn = document.getElementById("openDashboardBtn");
+  const closeDashBtn = document.getElementById("closeDashboardModalBtn");
+  const logoutBtn = document.getElementById("customerLogoutBtn");
+
+  // Check saved customer session
+  try {
+    const saved = localStorage.getItem("zaiqabox_customer_user");
+    if (saved) {
+      currentCustomer = JSON.parse(saved);
+      updateNavCustomerState();
+    }
+  } catch (e) {
+    currentCustomer = null;
+  }
+
+  // Open/Close Auth Modal
+  if (openAuthBtn) {
+    openAuthBtn.addEventListener("click", () => {
+      if (authModal) authModal.classList.add("open");
+    });
+  }
+  if (closeAuthBtn) {
+    closeAuthBtn.addEventListener("click", () => {
+      if (authModal) authModal.classList.remove("open");
+    });
+  }
+
+  // Open/Close Dashboard Modal
+  if (openDashBtn) {
+    openDashBtn.addEventListener("click", () => {
+      if (dashModal && currentCustomer) {
+        populateDashboardUI();
+        dashModal.classList.add("open");
+      }
+    });
+  }
+  if (closeDashBtn) {
+    closeDashBtn.addEventListener("click", () => {
+      if (dashModal) dashModal.classList.remove("open");
+    });
+  }
+
+  // Tabs & Forms
+  const tabLogin = document.getElementById("tabLoginBtn");
+  const tabRegister = document.getElementById("tabRegisterBtn");
+  const tabAdmin = document.getElementById("tabAdminBtn");
+  const formLogin = document.getElementById("customerLoginForm");
+  const formRegister = document.getElementById("customerRegisterForm");
+  const formAdmin = document.getElementById("adminLoginForm");
+  const switchReg = document.getElementById("switchToRegisterLink");
+  const switchLog = document.getElementById("switchToLoginLink");
+
+  // Switch tabs between Customer Login, Register, & Admin
+  function setAuthTab(tabName) {
+    if (tabLogin) tabLogin.classList.toggle("active", tabName === "login");
+    if (tabRegister) tabRegister.classList.toggle("active", tabName === "register");
+    if (tabAdmin) tabAdmin.classList.toggle("active", tabName === "admin");
+
+    if (formLogin) {
+      formLogin.classList.toggle("active", tabName === "login");
+      formLogin.style.display = tabName === "login" ? "block" : "none";
+    }
+    if (formRegister) {
+      formRegister.classList.toggle("active", tabName === "register");
+      formRegister.style.display = tabName === "register" ? "block" : "none";
+    }
+    if (formAdmin) {
+      formAdmin.classList.toggle("active", tabName === "admin");
+      formAdmin.style.display = tabName === "admin" ? "block" : "none";
+    }
+  }
+
+  if (tabLogin) tabLogin.addEventListener("click", () => setAuthTab("login"));
+  if (tabRegister) tabRegister.addEventListener("click", () => setAuthTab("register"));
+  if (tabAdmin) tabAdmin.addEventListener("click", () => setAuthTab("admin"));
+  if (switchReg) switchReg.addEventListener("click", (e) => { e.preventDefault(); setAuthTab("register"); });
+  if (switchLog) switchLog.addEventListener("click", (e) => { e.preventDefault(); setAuthTab("login"); });
+
+  // Handle Login Submit (Customer OR Admin credentials)
+  if (formLogin) {
+    formLogin.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginCustEmail").value.trim();
+      const pwd = document.getElementById("loginCustPassword").value.trim();
+
+      try {
+        const res = await fetch("/api/user/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: pwd })
+        });
+        const data = await res.json();
+
+        // 1. If Admin logged in: Redirect to Admin Panel immediately
+        if (res.ok && (data.role === "admin" || data.redirect)) {
+          const adminTok = data.token || "zaiqabox-admin-token-2026";
+          localStorage.setItem("zaiqabox_admin_token", adminTok);
+          localStorage.setItem("zaiqa_admin_token", adminTok);
+          window.location.href = data.redirect || "admin/index.html";
+          return;
+        }
+
+        // 2. If Customer logged in: Open their Lunch Dashboard directly
+        if (res.ok && data.customer) {
+          currentCustomer = data.customer;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          localStorage.setItem("zaiqabox_customer_token", data.token);
+          updateNavCustomerState();
+          if (authModal) authModal.classList.remove("open");
+          populateDashboardUI();
+          if (dashModal) dashModal.classList.add("open");
+        } else {
+          alert(data.detail || "Invalid email/username or password.");
+        }
+      } catch (err) {
+        alert("Failed to connect to authentication server.");
+      }
+    });
+  }
+
+  // Handle Direct Admin Form Submit
+  if (formAdmin) {
+    formAdmin.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("adminLoginUsername").value.trim();
+      const password = document.getElementById("adminLoginPassword").value.trim();
+
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem("zaiqabox_admin_token", data.token);
+          localStorage.setItem("zaiqa_admin_token", data.token);
+          window.location.href = "admin/index.html";
+        } else {
+          alert(data.detail || "Invalid admin username or password.");
+        }
+      } catch (err) {
+        alert("Failed to connect to Admin portal service.");
+      }
+    });
+  }
+
+  // Handle Register Submit
+  if (formRegister) {
+    formRegister.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("regFullName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const whatsapp = document.getElementById("regWhatsapp").value.trim();
+      const area = document.getElementById("regArea").value;
+      const addr = document.getElementById("regAddress").value.trim();
+      const pwd = document.getElementById("regPassword").value.trim();
+
+      try {
+        const res = await fetch("/api/user/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: name,
+            email: email,
+            whatsapp: whatsapp,
+            area: area,
+            officeAddress: addr,
+            password: pwd
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.customer) {
+          currentCustomer = data.customer;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          localStorage.setItem("zaiqabox_customer_token", data.token);
+          updateNavCustomerState();
+          if (authModal) authModal.classList.remove("open");
+          populateDashboardUI();
+          if (dashModal) dashModal.classList.add("open");
+        } else {
+          alert(data.detail || "Registration failed. Please verify your details.");
+        }
+      } catch (err) {
+        alert("Network error. Please try again.");
+      }
+    });
+  }
+
+  // Handle Logout
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("zaiqabox_customer_user");
+      localStorage.removeItem("zaiqabox_customer_token");
+      currentCustomer = null;
+      updateNavCustomerState();
+      if (dashModal) dashModal.classList.remove("open");
+      alert("You have been signed out.");
+    });
+  }
+
+  // Handle Pause / Resume Toggle
+  const pauseBtn = document.getElementById("dashTogglePauseBtn");
+  if (pauseBtn) {
+    pauseBtn.addEventListener("click", async () => {
+      if (!currentCustomer) return;
+      const isCurrentlyActive = (currentCustomer.SubscriptionStatus || "Active") === "Active";
+      const action = isCurrentlyActive ? "pause" : "resume";
+
+      try {
+        const res = await fetch("/api/user/pause", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId: currentCustomer.Id,
+            action: action
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentCustomer.SubscriptionStatus = isCurrentlyActive ? "Paused" : "Active";
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          populateDashboardUI();
+          alert(data.message || "Subscription status updated!");
+        }
+      } catch (err) {
+        alert("Could not update pause status.");
+      }
+    });
+  }
+
+  // Handle Update Delivery Address
+  const saveAddrBtn = document.getElementById("dashSaveAddressBtn");
+  if (saveAddrBtn) {
+    saveAddrBtn.addEventListener("click", async () => {
+      if (!currentCustomer) return;
+      const input = document.getElementById("dashNewAddressInput");
+      const newAddr = input ? input.value.trim() : "";
+      if (!newAddr) {
+        alert("Please enter a valid office address.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/user/update-address", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId: currentCustomer.Id,
+            officeAddress: newAddr,
+            area: currentCustomer.Area || "DHA"
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentCustomer.OfficeAddress = newAddr;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          alert("Delivery address updated successfully for upcoming meals!");
+        }
+      } catch (err) {
+        alert("Could not update address.");
+      }
+    });
+  }
+}
+
+function updateNavCustomerState() {
+  const guestNav = document.getElementById("guestNavActions");
+  const userNav = document.getElementById("userNavActions");
+  const navName = document.getElementById("navUserName");
+  const navTag = document.getElementById("navUserPlanTag");
+
+  if (currentCustomer && currentCustomer.FullName) {
+    if (guestNav) guestNav.style.display = "none";
+    if (userNav) userNav.style.display = "flex";
+    if (navName) navName.textContent = currentCustomer.FullName.split(" ")[0];
+    if (navTag) navTag.textContent = currentCustomer.SubscriptionStatus || "Active";
+  } else {
+    if (guestNav) guestNav.style.display = "flex";
+    if (userNav) userNav.style.display = "none";
+  }
+}
+
+function populateDashboardUI() {
+  if (!currentCustomer) return;
+  const nameEl = document.getElementById("dashCustomerName");
+  const emailEl = document.getElementById("dashCustomerEmail");
+  const planEl = document.getElementById("dashPlanName");
+  const statusEl = document.getElementById("dashSubStatus");
+  const lunchesEl = document.getElementById("dashLunchesRemaining");
+  const areaEl = document.getElementById("dashDeliveryArea");
+  const addrInput = document.getElementById("dashNewAddressInput");
+  const pauseBtn = document.getElementById("dashTogglePauseBtn");
+  const waSupportBtn = document.getElementById("dashWhatsappSupportBtn");
+
+  if (nameEl) nameEl.textContent = currentCustomer.FullName;
+  if (emailEl) emailEl.textContent = currentCustomer.Email;
+  if (planEl) planEl.textContent = currentCustomer.ActivePlan || "Weekly Trial";
+
+  const isPaused = (currentCustomer.SubscriptionStatus === "Paused");
+  if (statusEl) {
+    statusEl.textContent = isPaused ? "⏸️ Paused" : "🟢 Active";
+    statusEl.style.background = isPaused ? "#FEF3C7" : "#E8F5E9";
+    statusEl.style.color = isPaused ? "#92400E" : "#1B5E20";
+  }
+
+  if (lunchesEl) lunchesEl.textContent = currentCustomer.LunchesRemaining || "5";
+  if (areaEl) areaEl.textContent = `Delivery: ${currentCustomer.Area || 'DHA'}`;
+  if (addrInput) addrInput.value = currentCustomer.OfficeAddress || "";
+
+  if (pauseBtn) {
+    pauseBtn.innerHTML = isPaused ? "<span>▶️</span> Resume Lunch Delivery" : "<span>⏸️</span> Pause Tomorrow's Lunch";
+    pauseBtn.className = isPaused ? "btn btn-primary btn-block" : "btn btn-outline btn-block";
+  }
+
+  if (waSupportBtn) {
+    const waMsg = `Hi ZaiqaBox! I am ${currentCustomer.FullName} (${currentCustomer.Email}). I have an inquiry about my ${currentCustomer.ActivePlan} subscription.`;
+    waSupportBtn.href = createWhatsAppUrl(waMsg);
+  }
+}
+

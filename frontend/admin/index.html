@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZaiqaBox Operations &amp; Admin Dashboard | SSMS Integrated</title>
+  <link rel="icon" type="image/png" href="../assets/logo.png">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- 1. LOGIN VIEW -->
+  <div class="login-wrapper" id="loginWrapper">
+    <div class="login-card">
+      <img src="../assets/logo.png" alt="ZaiqaBox Logo" class="login-logo">
+      <h1 class="login-title">Operations Portal</h1>
+      <p class="login-subtitle">Sign in to manage meals, pricing, delivery &amp; leads</p>
+
+      <div class="login-alert">
+        <strong>Default Credentials:</strong><br>
+        Username: <code>admin</code><br>
+        Password: <code>zaiqabox2026</code>
+      </div>
+
+      <form id="adminLoginForm">
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label">Username</label>
+          <input type="text" id="loginUsername" class="form-input" placeholder="admin" required value="admin">
+        </div>
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required value="zaiqabox2026">
+        </div>
+        <button type="submit" class="btn btn-accent" style="width: 100%; margin-top: 0.5rem;" id="loginSubmitBtn">
+          <span>🔐</span> Sign In to Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MAIN APP SHELL -->
+  <div class="app-shell" id="appShell">
+    <!-- Top Bar -->
+    <header class="top-nav">
+      <div class="nav-left">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">☰</button>
+        <a href="#" class="brand-badge">
+          <img src="../assets/logo.png" alt="Logo" class="brand-logo-small">
+          <div class="brand-title-wrap">
+            <span class="brand-title">ZaiqaBox Admin</span>
+            <span class="brand-subtitle">Operations &amp; Control</span>
+          </div>
+        </a>
+        <div class="db-status-pill" id="dbStatusPill">
+          <span class="db-status-dot"></span>
+          <span id="dbStatusText">Microsoft SQL Server (ZaiqaBoxDB)</span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <a href="../index.html" target="_blank" class="btn btn-outline btn-sm">
+          <span>↗</span> View Public Website
+        </a>
+        <button class="btn btn-outline btn-sm" id="adminLogoutBtn">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-heading">Navigation</div>
+        <div class="nav-item active" data-tab="overview">
+          <span class="icon">📊</span>
+          <span>Overview</span>
+        </div>
+        <div class="nav-item" data-tab="menu">
+          <span class="icon">🍲</span>
+          <span>Weekly Menu Items</span>
+        </div>
+        <div class="nav-item" data-tab="plans">
+          <span class="icon">💳</span>
+          <span>Subscription Plans</span>
+        </div>
+        <div class="nav-item" data-tab="delivery">
+          <span class="icon">🛵</span>
+          <span>Delivery Zones</span>
+        </div>
+        <div class="nav-item" data-tab="testimonials">
+          <span class="icon">⭐</span>
+          <span>Customer Reviews</span>
+        </div>
+        <div class="nav-item" data-tab="faqs">
+          <span class="icon">❓</span>
+          <span>FAQs &amp; Help</span>
+        </div>
+        <div class="nav-item" data-tab="leads">
+          <span class="icon">👥</span>
+          <span>Captured Leads</span>
+        </div>
+        <div class="nav-item" data-tab="settings">
+          <span class="icon">⚙️</span>
+          <span>Website Settings</span>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="content-area">
+
+        <!-- TAB 1: OVERVIEW -->
+        <section class="tab-pane active" id="tab-overview">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Operations Overview</h2>
+              <p class="page-desc">Real-time status of orders, menu rotation, and SQL Server storage.</p>
+            </div>
+            <button class="btn btn-accent btn-sm" onclick="switchTab('menu')">
+              <span>➕</span> Add New Menu Dish
+            </button>
+          </div>
+
+          <div class="stat-cards-grid">
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" id="statTotalLeads">0</div>
+                <div class="stat-lbl">Total Captured Leads</div>
+              </div>
+              <div class="stat-icon">👥</div>
+            </div>
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" id="statNewLeads" style="color: var(--admin-accent);">0</div>
+                <div class="stat-lbl">New Uncontacted Leads</div>
+              </div>
+              <div class="stat-icon">🔔</div>
+            </div>
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" id="statActiveDishes">5</div>
+                <div class="stat-lbl">Active Menu Dishes</div>
+              </div>
+              <div class="stat-icon">🍲</div>
+            </div>
+            <div class="stat-card">
+              <div>
+                <div class="stat-val" id="statActivePlans">2</div>
+                <div class="stat-lbl">Active Meal Plans</div>
+              </div>
+              <div class="stat-icon">💳</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Recent Inquiries &amp; Leads</span>
+              <button class="btn btn-outline btn-sm" onclick="switchTab('leads')">View All Leads →</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Name</th>
+                    <th>WhatsApp</th>
+                    <th>Area</th>
+                    <th>Plan</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overviewRecentLeadsTable">
+                  <tr><td colspan="7" style="text-align: center; color: var(--admin-muted);">Loading leads...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: MENU MANAGEMENT -->
+        <section class="tab-pane" id="tab-menu">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Weekly Menu &amp; Dishes</h2>
+              <p class="page-desc">Manage dish pictures, nutrition details, star ratings, and side items.</p>
+            </div>
+            <button class="btn btn-accent" id="openAddDishBtn">
+              <span>➕</span> Add New Dish
+            </button>
+          </div>
+
+          <div class="dishes-grid" id="dishesGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 3: PLANS & PRICING -->
+        <section class="tab-pane" id="tab-plans">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Subscription Plans &amp; Pricing</h2>
+              <p class="page-desc">Create, edit, or delete meal subscription plans shown on the website.</p>
+            </div>
+            <button class="btn btn-accent" id="openAddPlanBtn">
+              <span>➕</span> Add New Plan
+            </button>
+          </div>
+
+          <div id="plansListContainer">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- TAB 4: DELIVERY ZONES -->
+        <section class="tab-pane" id="tab-delivery">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Delivery Zones &amp; Policies</h2>
+              <p class="page-desc">Configure corporate clusters (DHA, Clifton, PECHS) and delivery surcharges.</p>
+            </div>
+            <button class="btn btn-accent" id="openAddZoneBtn">
+              <span>➕</span> Add Delivery Zone
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Configured Delivery Zones</div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Zone Name</th>
+                    <th>Coverage Areas</th>
+                    <th>Free Delivery?</th>
+                    <th>Daily Surcharge</th>
+                    <th>Time Window</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="deliveryZonesTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: TESTIMONIALS / REVIEWS -->
+        <section class="tab-pane" id="tab-testimonials">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Customer Reviews &amp; Testimonials</h2>
+              <p class="page-desc">Manage verified corporate customer testimonials shown on the landing page.</p>
+            </div>
+            <button class="btn btn-accent" id="openAddTestimonialBtn">
+              <span>➕</span> Add New Review
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Customer Name</th>
+                    <th>Company / Area</th>
+                    <th>Rating</th>
+                    <th>Review Text</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="testimonialsTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 6: FAQS -->
+        <section class="tab-pane" id="tab-faqs">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Frequently Asked Questions (FAQ)</h2>
+              <p class="page-desc">Manage answers to common customer questions about delivery, pause cutoff &amp; quality.</p>
+            </div>
+            <button class="btn btn-accent" id="openAddFaqBtn">
+              <span>➕</span> Add New FAQ
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Question</th>
+                    <th>Answer</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="faqsTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: LEADS CRM -->
+        <section class="tab-pane" id="tab-leads">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Lead Management CRM</h2>
+              <p class="page-desc">All customer form submissions saved in SQL Server with AI summaries.</p>
+            </div>
+            <a href="/api/admin/leads/export-csv" class="btn btn-primary" id="exportLeadsCsvBtn">
+              <span>📥</span> Export CSV
+            </a>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+              <input type="text" id="leadsSearchInput" class="form-input" placeholder="Search by name, email, or WhatsApp..." style="max-width: 320px;">
+              <select id="leadsStatusFilter" class="form-select" style="max-width: 180px;">
+                <option value="ALL">All Statuses</option>
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Subscribed">Subscribed</option>
+                <option value="Archived">Archived</option>
+              </select>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Customer Name</th>
+                    <th>WhatsApp</th>
+                    <th>Area</th>
+                    <th>Interested Plan</th>
+                    <th>AI Summary</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="leadsTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 6: SETTINGS -->
+        <section class="tab-pane" id="tab-settings">
+          <div class="page-header">
+            <div>
+              <h2 class="page-title">Website Settings &amp; Policies</h2>
+              <p class="page-desc">Changes saved here immediately update the live public website.</p>
+            </div>
+            <button class="btn btn-accent" id="saveSettingsBtn">
+              <span>💾</span> Save All Settings
+            </button>
+          </div>
+
+          <div class="card" style="max-width: 800px;">
+            <form id="settingsForm">
+              <div class="form-group">
+                <label class="form-label">Brand Name</label>
+                <input type="text" id="setBrandName" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Announcement Banner Text (Top of page)</label>
+                <input type="text" id="setAnnouncement" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Official WhatsApp Number (Format: 923XXXXXXXXX)</label>
+                <input type="text" id="setWhatsapp" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Customer Support Email</label>
+                <input type="email" id="setEmail" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Outside Delivery Fee Per Day (PKR)</label>
+                <input type="number" id="setOutsideFee" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Daily Pause Cutoff Deadline</label>
+                <input type="text" id="setPauseDeadline" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nutritionist Compliance Note (Fixed)</label>
+                <textarea id="setCompliance" class="form-textarea" rows="2" readonly style="background: #F8FAFC;"></textarea>
+              </div>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- DISH MODAL (Add / Edit) -->
+  <div class="modal-backdrop" id="dishModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="dishModalTitle">Add Menu Dish</h3>
+        <button class="modal-close" id="closeDishModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="dishForm">
+          <input type="hidden" id="dishId">
+          <div class="form-group">
+            <label class="form-label">Day of Week</label>
+            <select id="dishDay" class="form-select" required>
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dish Title</label>
+            <input type="text" id="dishTitle" class="form-input" placeholder="e.g. Tender Chicken Tikka Rice Bowl" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Nutritional Description</label>
+            <textarea id="dishDescription" class="form-textarea" rows="3" placeholder="Description of cooking method, spices, ingredients..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sides &amp; Accompaniments</label>
+            <input type="text" id="dishSides" class="form-input" placeholder="e.g. Kachumber salad, mint yogurt raita" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dish Image URL</label>
+            <input type="text" id="dishImageUrl" class="form-input" placeholder="assets/menu/monday_tikka_bowl.jpg" required>
+            <div style="margin-top: 0.5rem;">
+              <label style="font-size: 0.8rem; color: var(--admin-muted);">Or upload new image:</label>
+              <input type="file" id="dishImageFile" accept="image/*" class="form-input" style="padding: 0.35rem;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Star Rating (1.0 – 5.0)</label>
+              <input type="number" id="dishRating" class="form-input" step="0.1" min="1.0" max="5.0" value="4.9" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reviews Count</label>
+              <input type="number" id="dishReviews" class="form-input" value="135" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Calories (kcal)</label>
+              <input type="number" id="dishCalories" class="form-input" value="520" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Protein (g)</label>
+              <input type="number" id="dishProtein" class="form-input" value="36" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Badge Tag</label>
+            <input type="text" id="dishBadge" class="form-input" placeholder="e.g. High Protein / Chef Special" value="High Protein">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="cancelDishBtn">Cancel</button>
+        <button type="button" class="btn btn-accent" id="saveDishBtn">Save Dish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAN MODAL (Add / Edit) -->
+  <div class="modal-backdrop" id="planModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="planModalTitle">Add Subscription Plan</h3>
+        <button class="modal-close" id="closePlanModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="planForm">
+          <input type="hidden" id="modalPlanId">
+          <div class="form-group">
+            <label class="form-label">Plan Name</label>
+            <input type="text" id="modalPlanName" class="form-input" placeholder="e.g. Bi-Weekly Executive" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Price (PKR)</label>
+              <input type="number" id="modalPlanPrice" class="form-input" placeholder="6800" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lunches Count</label>
+              <input type="number" id="modalPlanLunches" class="form-input" placeholder="10" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Period Text</label>
+            <input type="text" id="modalPlanPeriod" class="form-input" placeholder="10 Lunches (2 Weeks Mon-Fri)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Badge Tag</label>
+            <input type="text" id="modalPlanBadge" class="form-input" placeholder="e.g. Best for Teams">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="modalPlanDesc" class="form-textarea" rows="2" placeholder="Plan overview..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Features (Pipe '|' separated)</label>
+            <input type="text" id="modalPlanFeatures" class="form-input" placeholder="10 fresh home-cooked lunches | Free delivery in DHA, Clifton & PECHS | Pause anytime">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="cancelPlanBtn">Cancel</button>
+        <button type="button" class="btn btn-accent" id="saveModalPlanBtn">Save Plan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELIVERY ZONE MODAL (Add / Edit) -->
+  <div class="modal-backdrop" id="zoneModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="zoneModalTitle">Add Delivery Zone</h3>
+        <button class="modal-close" id="closeZoneModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="zoneForm">
+          <input type="hidden" id="modalZoneId">
+          <div class="form-group">
+            <label class="form-label">Zone Name</label>
+            <input type="text" id="modalZoneName" class="form-input" placeholder="e.g. Bahadurabad / Sharfabad" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Coverage Details</label>
+            <input type="text" id="modalZoneCoverage" class="form-input" placeholder="e.g. Alamgir Road, Dhoraji, CP Berar Society" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Free Delivery?</label>
+              <select id="modalZoneIsFree" class="form-select">
+                <option value="true">Yes (Free Delivery)</option>
+                <option value="false">No (Charged)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Daily Surcharge (PKR)</label>
+              <input type="number" id="modalZoneFee" class="form-input" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Timing Window</label>
+            <input type="text" id="modalZoneTiming" class="form-input" value="12:30 PM – 1:30 PM">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="cancelZoneBtn">Cancel</button>
+        <button type="button" class="btn btn-accent" id="saveModalZoneBtn">Save Zone</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TESTIMONIAL MODAL (Add / Edit) -->
+  <div class="modal-backdrop" id="testimonialModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="testModalTitle">Add Customer Review</h3>
+        <button class="modal-close" id="closeTestModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="testForm">
+          <input type="hidden" id="modalTestId">
+          <div class="form-group">
+            <label class="form-label">Customer Name</label>
+            <input type="text" id="modalTestName" class="form-input" placeholder="e.g. Bilal Ahmed" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Company / Office Area</label>
+            <input type="text" id="modalTestArea" class="form-input" placeholder="e.g. Product Lead, Clifton Block 4" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rating (1.0 – 5.0)</label>
+            <input type="number" id="modalTestRating" class="form-input" step="0.1" min="1.0" max="5.0" value="5.0" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Review Text</label>
+            <textarea id="modalTestText" class="form-textarea" rows="3" placeholder="Customer experience with food and delivery..." required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="cancelTestBtn">Cancel</button>
+        <button type="button" class="btn btn-accent" id="saveModalTestBtn">Save Review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ MODAL (Add / Edit) -->
+  <div class="modal-backdrop" id="faqModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="faqModalTitle">Add FAQ Item</h3>
+        <button class="modal-close" id="closeFaqModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="faqForm">
+          <input type="hidden" id="modalFaqId">
+          <div class="form-group">
+            <label class="form-label">Question</label>
+            <input type="text" id="modalFaqQuestion" class="form-input" placeholder="e.g. What is your pause cutoff time?" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Answer</label>
+            <textarea id="modalFaqAnswer" class="form-textarea" rows="3" placeholder="Detailed answer..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="modalFaqCategory" class="form-select">
+              <option value="Delivery">Delivery</option>
+              <option value="Orders & Flexibility">Orders &amp; Flexibility</option>
+              <option value="Health & Quality">Health &amp; Quality</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="cancelFaqBtn">Cancel</button>
+        <button type="button" class="btn btn-accent" id="saveModalFaqBtn">Save FAQ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JavaScript -->
+  <script src="admin.js"></script>
+</body>
+</html>
