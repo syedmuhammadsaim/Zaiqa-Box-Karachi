@@ -30,6 +30,9 @@ from pydantic import BaseModel, Field, EmailStr
 from dotenv import load_dotenv
 import httpx
 
+# Reusable HTTP client with persistent connection pool to eliminate TLS handshake latency
+voice_client = httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_keepalive_connections=15, max_connections=30))
+
 # Load environment variables
 load_dotenv()
 
@@ -44,7 +47,7 @@ from backend.database import db
 
 # Configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b").strip()
 
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "").strip()
 DEEPGRAM_STT_MODEL = os.getenv("DEEPGRAM_STT_MODEL", "nova-2").strip()
@@ -750,12 +753,15 @@ async def chat_endpoint(payload: ChatRequest):
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
                 "Content-Type": "application/json"
             }
-            clean_speech = re.sub(r'[*_#`~]', '', sanitized_reply)[:350]
+            # Fast speech synthesis: synthesize first clean sentence to keep voice response sub-second
+            clean_speech = re.sub(r'[*_#`~]', '', sanitized_reply).strip()
+            if payload.force_english and "." in clean_speech:
+                clean_speech = clean_speech.split(".")[0].strip() + "."
+            clean_speech = clean_speech[:180]
             body = {"text": clean_speech}
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                tts_res = await client.post(url, headers=headers, json=body)
-                if tts_res.status_code == 200:
-                    audio_b64 = base64.b64encode(tts_res.content).decode("utf-8")
+            tts_res = await voice_client.post(url, headers=headers, json=body)
+            if tts_res.status_code == 200:
+                audio_b64 = base64.b64encode(tts_res.content).decode("utf-8")
         except Exception as e:
             print(f"[Chat TTS Error] {e}")
 
@@ -839,13 +845,12 @@ async def voice_assistant(file: UploadFile = File(...)):
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
                 "Content-Type": file.content_type or "audio/webm"
             }
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(url, headers=headers, content=audio_bytes)
-                if res.status_code == 200:
-                    data = res.json()
-                    channels = data.get("results", {}).get("channels", [])
-                    if channels and channels[0].get("alternatives"):
-                        transcript = channels[0]["alternatives"][0].get("transcript", "").strip()
+            res = await voice_client.post(url, headers=headers, content=audio_bytes)
+            if res.status_code == 200:
+                data = res.json()
+                channels = data.get("results", {}).get("channels", [])
+                if channels and channels[0].get("alternatives"):
+                    transcript = channels[0]["alternatives"][0].get("transcript", "").strip()
         except Exception as e:
             print(f"[Voice STT Error] {e}")
 
@@ -857,22 +862,7 @@ async def voice_assistant(file: UploadFile = File(...)):
     reply = chat_result.get("reply", "")
     handoff = chat_result.get("handoff", False)
     sources = chat_result.get("sources", [])
-
     audio_b64 = chat_result.get("audio_base64", "")
-    if not audio_b64 and DEEPGRAM_API_KEY and reply:
-        try:
-            url = f"https://api.deepgram.com/v1/speak?model={DEEPGRAM_TTS_VOICE}"
-            headers = {
-                "Authorization": f"Token {DEEPGRAM_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            body = {"text": reply[:300]}
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                res = await client.post(url, headers=headers, json=body)
-                if res.status_code == 200:
-                    audio_b64 = base64.b64encode(res.content).decode("utf-8")
-        except Exception as e:
-            print(f"[Voice TTS Fallback Error] {e}")
 
     return {
         "transcript": transcript,

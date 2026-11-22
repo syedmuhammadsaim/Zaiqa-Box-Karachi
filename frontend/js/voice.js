@@ -24,6 +24,7 @@ class VoiceAssistant {
     this.silenceTimer = null;
     this.isModalActive = false;
     this.animationFrameId = null;
+    this.currentFetchController = null;
 
     this.initElements();
     this.bindEvents();
@@ -113,6 +114,11 @@ class VoiceAssistant {
 
   closeModal() {
     this.isModalActive = false;
+    if (this.currentFetchController) {
+      try { this.currentFetchController.abort(); } catch (e) {}
+      this.currentFetchController = null;
+    }
+    this.stopPlaybackOnly();
     this.stopAll();
     if (this.modal) {
       this.modal.classList.remove("open");
@@ -298,19 +304,22 @@ class VoiceAssistant {
       if (avg > 7) {
         spokenDetected = true;
         silenceStart = null;
+        if (this.statusText && this.statusText.textContent !== "🗣️ Hearing you speak...") {
+          this.statusText.textContent = "🗣️ Hearing you speak...";
+        }
       } else if (spokenDetected) {
         if (!silenceStart) {
           silenceStart = Date.now();
-        } else if (Date.now() - silenceStart > 1800) {
-          // Exactly ~1.8 seconds after user finishes sentence: Answer immediately!
+        } else if (Date.now() - silenceStart > 750) {
+          // Exactly ~750ms after user finishes sentence: Answer immediately!
           if (this.avatarCircle) this.avatarCircle.style.transform = "scale(1)";
           this.stopRecording();
           return;
         }
       }
 
-      // Safeguard: auto-stop after 8 seconds of continuous recording to answer promptly
-      if (spokenDetected && (Date.now() - recordStartTime > 8000)) {
+      // Safeguard: auto-stop after 5.5 seconds of continuous recording to answer promptly
+      if (spokenDetected && (Date.now() - recordStartTime > 5500)) {
         if (this.avatarCircle) this.avatarCircle.style.transform = "scale(1)";
         this.stopRecording();
         return;
@@ -361,6 +370,11 @@ class VoiceAssistant {
   }
 
   stopAll() {
+    if (this.currentFetchController) {
+      try { this.currentFetchController.abort(); } catch (e) {}
+      this.currentFetchController = null;
+    }
+
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
@@ -378,7 +392,7 @@ class VoiceAssistant {
       this.audioStream = null;
     }
 
-    if (this.audioContext) {
+    if (this.audioContext && this.audioContext.state !== "closed") {
       try { this.audioContext.close(); } catch (e) {}
       this.audioContext = null;
       this.analyser = null;
@@ -390,19 +404,19 @@ class VoiceAssistant {
   }
 
   async processRecordedAudio(mimeType) {
-    if (!this.isModalActive && this.audioChunks.length === 0) {
+    if (!this.isModalActive) {
       this.stopAll();
       return;
     }
 
     if (this.audioChunks.length === 0) {
       // If no speech captured and call is active, resume listening automatically
-      if (this.isModalActive) {
+      if (this.isModalActive && !this.isPlaying && !this.isRecording) {
         setTimeout(() => {
           if (this.isModalActive && !this.isPlaying && !this.isRecording) {
             this.startRecording(true);
           }
-        }, 500);
+        }, 400);
       }
       return;
     }
@@ -411,23 +425,30 @@ class VoiceAssistant {
     const formData = new FormData();
     formData.append("file", audioBlob, "recording.webm");
 
+    if (this.currentFetchController) {
+      try { this.currentFetchController.abort(); } catch (e) {}
+    }
+    this.currentFetchController = new AbortController();
+
     try {
-      if (this.isModalActive) {
-        this.setModalState("thinking", "⏳ Preparing answer...");
-      } else {
-        this.setChatState("thinking", "Transcribing & Thinking...");
-      }
+      if (!this.isModalActive) return; // User hung up before fetch
+      this.setModalState("thinking", "⚡ Preparing answer...");
 
       const response = await fetch("/api/voice", {
         method: "POST",
-        body: formData
+        body: formData,
+        signal: this.currentFetchController.signal
       });
+
+      if (!this.isModalActive) return; // User hung up during network request!
 
       if (!response.ok) {
         throw new Error(`Voice endpoint returned ${response.status}`);
       }
 
       const data = await response.json();
+      if (!this.isModalActive) return; // User hung up!
+
       const transcript = data.transcript || "";
       const reply = data.reply || "";
       const isHandoff = !!data.handoff;
@@ -450,7 +471,9 @@ class VoiceAssistant {
         window.chatWidget.appendMessage("bot", reply, isHandoff, audioBase64);
       }
 
-      // 3. Play voice reply aloud! (Web Audio API -> HTML5 Audio -> Web Speech API)
+      // 3. Play voice reply aloud ONLY IF call is still open!
+      if (!this.isModalActive) return;
+
       if (audioBase64) {
         await this.playDeepgramAudio(audioBase64, reply);
       } else if (reply) {
@@ -462,7 +485,12 @@ class VoiceAssistant {
       }
 
     } catch (err) {
+      if (err.name === "AbortError") {
+        console.log("[Voice] Call ended by user, request aborted cleanly.");
+        return;
+      }
       console.error("[Voice Process Error]", err);
+      if (!this.isModalActive) return;
       if (this.botText) {
         this.botText.textContent = "I could not hear clearly. Please speak again...";
       }
@@ -473,10 +501,13 @@ class VoiceAssistant {
           }
         }, 1200);
       }
+    } finally {
+      this.currentFetchController = null;
     }
   }
 
   async playDeepgramAudio(base64Data, fallbackText) {
+    if (!this.isModalActive) return; // User hung up, never play
     try {
       this.isPlaying = true;
       if (this.isModalActive) {
@@ -503,12 +534,16 @@ class VoiceAssistant {
         if (AudioContextClass) this.audioContext = new AudioContextClass();
       }
 
-      if (this.audioContext) {
+      if (this.audioContext && this.isModalActive) {
         try {
           if (this.audioContext.state === "suspended") {
             await this.audioContext.resume();
           }
+          if (!this.isModalActive) return;
+
           const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer.slice(0));
+          if (!this.isModalActive) return;
+
           const source = this.audioContext.createBufferSource();
           source.buffer = audioBuffer;
           source.connect(this.audioContext.destination);
@@ -533,7 +568,7 @@ class VoiceAssistant {
       }
 
       // Method 2: HTML5 Audio with Blob URL
-      if (!playedViaWebAudio) {
+      if (!playedViaWebAudio && this.isModalActive) {
         const blob = new Blob([bytes], { type: "audio/mp3" });
         const blobUrl = URL.createObjectURL(blob);
         this.currentAudio = new Audio(blobUrl);
@@ -551,26 +586,26 @@ class VoiceAssistant {
 
         this.currentAudio.onerror = () => {
           URL.revokeObjectURL(blobUrl);
-          this.playSpeechSynthesis(fallbackText);
+          if (this.isModalActive) this.playSpeechSynthesis(fallbackText);
         };
 
         const playPromise = this.currentAudio.play();
         if (playPromise !== undefined) {
           playPromise.catch(err => {
             console.warn("[Audio Autoplay blocked, falling back to Web Speech API]", err);
-            this.playSpeechSynthesis(fallbackText);
+            if (this.isModalActive) this.playSpeechSynthesis(fallbackText);
           });
         }
       }
 
     } catch (e) {
       console.error("[Play Error]", e);
-      this.playSpeechSynthesis(fallbackText);
+      if (this.isModalActive) this.playSpeechSynthesis(fallbackText);
     }
   }
 
   async speakText(text) {
-    if (!text) return;
+    if (!text || !this.isModalActive) return;
     this.stopPlaybackOnly();
     try {
       if (this.isModalActive) {
@@ -599,6 +634,7 @@ class VoiceAssistant {
   }
 
   playSpeechSynthesis(text) {
+    if (!text || !this.isModalActive) return;
     if (!window.speechSynthesis) {
       if (this.isModalActive) this.startRecording(true);
       return;
