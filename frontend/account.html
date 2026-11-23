@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account &amp; Lunch Portal | ZaiqaBox Karachi</title>
+  <meta name="description" content="Manage your ZaiqaBox corporate lunch subscription, download your personalized nutrition guide, update delivery address, and adjust meal schedules.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Dedicated Account Page Styling */
+    .account-page-wrap {
+      min-height: calc(100vh - 200px);
+      background: #FDFBF7;
+      padding: 2.5rem 0 4rem;
+    }
+    .account-header-banner {
+      background: #FFFFFF;
+      border: 1.5px solid #F1E5D8;
+      border-radius: 18px;
+      padding: 1.75rem 2rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .account-user-block {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .account-avatar-wrapper {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+    }
+    .account-avatar-img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #E5A93C;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    }
+    .account-avatar-initial {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(229, 169, 60, 0.18);
+      border: 3px solid #E5A93C;
+      color: #2D1810;
+      font-size: 2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .account-avatar-cam-btn {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 28px;
+      height: 28px;
+      background: #E5A93C;
+      color: #FFFFFF;
+      border-radius: 50%;
+      border: 2px solid #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .account-name-title {
+      font-size: 1.45rem;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      color: var(--walnut);
+      margin: 0 0 4px;
+    }
+    .account-email-sub {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .account-meta-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .account-pill {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 14px;
+      background: #F4ECE1;
+      color: var(--walnut);
+    }
+    .account-actions-top {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .account-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+    .account-card {
+      background: #FFFFFF;
+      border: 1.5px solid #F1E5D8;
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .account-card:hover {
+      box-shadow: 0 8px 24px rgba(229, 169, 60, 0.08);
+    }
+    .account-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+    }
+    .account-card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--walnut);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+    .account-counter-box {
+      background: linear-gradient(135deg, #FEFBF6 0%, #FBF3E7 100%);
+      border: 1.5px solid #F3DFC4;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .account-counter-num {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #E5A93C;
+      line-height: 1;
+    }
+    .account-counter-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--walnut);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    .account-status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .status-active {
+      background: #DCFCE7;
+      color: #15803D;
+      border: 1px solid #86EFAC;
+    }
+    .status-paused {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+    .account-edit-box {
+      display: none;
+      background: #FFFDF9;
+      border: 1.5px solid #E5A93C;
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(229, 169, 60, 0.1);
+    }
+    .not-logged-in-banner {
+      display: none;
+      text-align: center;
+      background: #FFFFFF;
+      border: 1.5px solid #F1E5D8;
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      max-width: 600px;
+      margin: 2rem auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Announcement Bar -->
+  <div class="announcement-bar" id="announcementBar">
+    <div class="container announcement-content">
+      <span>🍱 Order before 8:00 PM for tomorrow's lunch delivery | Free delivery in DHA, Clifton &amp; PECHS</span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="header" id="header" style="background: var(--walnut); border-bottom: 2px solid var(--accent);">
+    <div class="container nav-container">
+      <a href="index.html" class="nav-logo-link" aria-label="ZaiqaBox Karachi Home">
+        <img src="assets/logo.png" alt="ZaiqaBox Karachi Logo" class="nav-logo-img">
+        <span class="nav-logo-text" style="color: #FFFFFF;">ZaiqaBox</span>
+      </a>
+
+      <nav aria-label="Account Navigation">
+        <ul class="nav-menu">
+          <li><a href="index.html" class="nav-link" style="color: #FFF;">Home</a></li>
+          <li><a href="index.html#menu" class="nav-link" style="color: #FFF;">Weekly Menu</a></li>
+          <li><a href="index.html#plans" class="nav-link" style="color: #FFF;">Plans</a></li>
+          <li><a href="index.html#contact" class="nav-link" style="color: #FFF;">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-sm btn-outline" style="border-color: rgba(255,255,255,0.4); color: #FFF; border-radius: 20px;">
+          <span>🏠</span> Home Page
+        </a>
+        <button type="button" class="btn btn-accent btn-sm" id="accountTopLogoutBtn" style="border-radius: 20px; font-weight: 700;">
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Content Wrap -->
+  <main class="account-page-wrap">
+    <div class="container">
+
+      <!-- Breadcrumbs -->
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        <a href="index.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">Home</a>
+        <span style="margin: 0 6px;">/</span>
+        <span style="color: var(--walnut); font-weight: 600;">My Account</span>
+      </div>
+
+      <!-- NOT LOGGED IN STATE PROMPT -->
+      <div class="not-logged-in-banner" id="notLoggedInBanner">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
+        <h2 style="color: var(--walnut); font-family: var(--font-heading); margin-bottom: 0.5rem;">Sign In Required</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.5;">
+          Please sign in to your ZaiqaBox account to view your active lunch subscription, download guides, and manage delivery schedules.
+        </p>
+        <a href="index.html?login=1" class="btn btn-primary" style="padding: 10px 24px; border-radius: 24px;">
+          <span>👤</span> Sign In on Homepage
+        </a>
+      </div>
+
+      <!-- LOGGED IN ACCOUNT CONTENT -->
+      <div id="accountLoggedInSection">
+        
+        <!-- Header Profile Banner -->
+        <div class="account-header-banner">
+          <div class="account-user-block">
+            <div class="account-avatar-wrapper">
+              <img id="accAvatarImg" class="account-avatar-img" src="" alt="" style="display: none;" referrerpolicy="no-referrer">
+              <div id="accAvatarCircle" class="account-avatar-initial">S</div>
+              <label for="accAvatarUploadInput" class="account-avatar-cam-btn" title="Upload New Profile Picture">📷</label>
+              <input type="file" id="accAvatarUploadInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+            </div>
+            <div>
+              <h1 class="account-name-title" id="accCustomerName">Syed Muhammad Saim</h1>
+              <div class="account-email-sub" id="accCustomerEmail">
+                <span>✉️</span> customer@gmail.com
+              </div>
+              <div class="account-meta-pills">
+                <span class="account-pill" id="accAreaPill">📍 Clifton</span>
+                <span class="account-pill" id="accPhonePill">📱 03001234567</span>
+                <span class="account-status-badge status-active" id="accPlanStatusPill">🟢 Active</span>
+              </div>
+            </div>
+          </div>
+          <div class="account-actions-top">
+            <button type="button" class="btn btn-outline btn-sm" id="toggleEditProfileBtn" style="border-radius: 20px; font-weight: 600;">
+              <span>✏️</span> Edit Profile
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="accLogoutBtn" style="border-radius: 20px;">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Collapsible Edit Profile Panel -->
+        <div class="account-edit-box" id="accEditProfileBox">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="margin: 0; color: var(--walnut); font-family: var(--font-heading); font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+              <span>✏️</span> Update Profile Information
+            </h3>
+            <button type="button" id="closeEditProfileBoxBtn" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--walnut);">&times;</button>
+          </div>
+          <form id="accEditForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.82rem;">Full Name *</label>
+                <input type="text" id="accEditName" class="form-input" required placeholder="Your full name">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.82rem;">WhatsApp Number *</label>
+                <input type="tel" id="accEditWhatsapp" class="form-input" required placeholder="03001234567">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.82rem;">Corporate Area *</label>
+                <select id="accEditArea" class="form-select">
+                  <option value="Clifton">Clifton (All Blocks)</option>
+                  <option value="DHA">DHA (Defence Phases 1 - 8)</option>
+                  <option value="PECHS">PECHS (Blocks 1 - 6)</option>
+                  <option value="Other">Other Karachi Corporate Area</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.82rem;">Delivery Office / Desk Address</label>
+                <input type="text" id="accEditAddress" class="form-input" placeholder="e.g. 4th Floor, Emerald Tower, Clifton">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="button" class="btn btn-outline btn-sm" id="cancelEditProfileBoxBtn">Cancel</button>
+              <button type="submit" class="btn btn-primary btn-sm" id="saveAccProfileBtn">
+                <span id="saveAccProfileText">💾 Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Main Account 2-Column Grid -->
+        <div class="account-grid">
+
+          <!-- CARD 1: Subscription Status & Meals -->
+          <div class="account-card">
+            <div>
+              <div class="account-card-header">
+                <div>
+                  <span class="account-pill" id="accActivePlanBadge" style="background: rgba(229, 169, 60, 0.2); color: #8A5805; margin-bottom: 6px; display: inline-block;">Weekly Trial</span>
+                  <h3 class="account-card-title">🍱 Office Lunch Subscription</h3>
+                </div>
+                <span class="account-status-badge status-active" id="accMealStatusPill">🟢 Active</span>
+              </div>
+
+              <!-- Counter Box -->
+              <div class="account-counter-box">
+                <div>
+                  <div class="account-counter-num" id="accLunchesCount">5</div>
+                  <div class="account-counter-label">Lunches Remaining</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 0.88rem; font-weight: 700; color: var(--walnut);" id="accDeliveryAreaLabel">Delivery: Clifton</div>
+                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Window: 12:30 PM – 1:30 PM</div>
+                </div>
+              </div>
+
+              <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.25rem;">
+                Need to pause tomorrow? Toggle pause before <strong>8:00 PM</strong>. Your meal credits never expire and roll over automatically!
+              </p>
+            </div>
+
+            <div>
+              <button type="button" class="btn btn-outline btn-block" id="accTogglePauseBtn" style="font-weight: 700;">
+                <span>⏸️</span> Pause Tomorrow's Lunch
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 2: Personalized Nutrition Guide PDF -->
+          <div class="account-card" style="background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF9 100%);">
+            <div>
+              <div class="account-card-header">
+                <h3 class="account-card-title">
+                  <span>📄</span> Nutrition Guide &amp; Meal Plan
+                </h3>
+                <span class="account-pill">Free Guide</span>
+              </div>
+
+              <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.25rem;">
+                Your personalized 5-Day Office Lunch Nutrition Guide is saved to your account. You can review your daily calories, protein macros, and healthy office eating tips anytime.
+              </p>
+
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px 16px; margin-bottom: 1.5rem;">
+                <div style="font-weight: 700; font-size: 0.85rem; color: var(--walnut);">Includes:</div>
+                <ul style="font-size: 0.82rem; color: #475569; margin: 6px 0 0; padding-left: 18px; line-height: 1.5;">
+                  <li>High-Protein &amp; Low-Oil Karachi Lunch Breakdown</li>
+                  <li>Afternoon Energy Tips for Desk Workers</li>
+                  <li>Weekly Meal Prep &amp; Nutritionist Guidelines</li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <a href="assets/office_lunch_guide.pdf" download="ZaiqaBox_Office_Nutrition_Guide.pdf" class="btn btn-primary btn-block" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>📥</span> Download Nutrition Guide (PDF)
+              </a>
+            </div>
+          </div>
+
+          <!-- CARD 3: Update Delivery Office Address -->
+          <div class="account-card">
+            <div>
+              <div class="account-card-header">
+                <h3 class="account-card-title">
+                  <span>📍</span> Delivery Office &amp; Desk
+                </h3>
+                <span class="account-pill">8:00 PM Cutoff</span>
+              </div>
+
+              <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+                Shifted desks, floors, or working at another branch? Update your delivery instructions here.
+              </p>
+
+              <form id="accAddressForm">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label class="form-label" style="font-size: 0.82rem;">Office Address / Floor / Desk</label>
+                  <input type="text" id="accOfficeAddressInput" class="form-input" placeholder="e.g. 5th Floor, Ocean Mall Executive Tower, Clifton">
+                </div>
+                <button type="submit" class="btn btn-outline btn-block" id="accSaveAddressBtn" style="font-weight: 700;">
+                  <span>💾</span> Update Delivery Address
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- CARD 4: Dedicated WhatsApp Concierge Support -->
+          <div class="account-card">
+            <div>
+              <div class="account-card-header">
+                <h3 class="account-card-title">
+                  <span>💬</span> WhatsApp Lunch Concierge
+                </h3>
+                <span class="account-pill" style="background: #DCFCE7; color: #16A34A;">Live Help</span>
+              </div>
+
+              <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+                Have questions about your meals, want custom dietary adjustments, or need catering for your office team? Our human nutritionist is available on WhatsApp.
+              </p>
+
+              <div style="font-size: 0.84rem; color: var(--walnut); font-weight: 600; margin-bottom: 1.25rem;">
+                ⏱️ Support hours: Monday – Saturday (9:00 AM – 8:00 PM)
+              </div>
+            </div>
+
+            <div>
+              <a href="https://wa.me/923378034564" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-block" id="accWhatsappBtn" style="background: #25D366; border-color: #25D366; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>💬</span> Chat with Concierge
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" style="background: var(--walnut); color: #FFF; padding: 2.5rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1);">
+    <div class="container">
+      <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--accent);">ZaiqaBox Karachi</div>
+      <p style="font-size: 0.82rem; color: rgba(255,255,255,0.7); margin: 0 0 1rem;">Fresh, Home-Cooked, Portion-Controlled Corporate Lunches • Clifton, DHA &amp; PECHS</p>
+      <div style="font-size: 0.78rem; color: rgba(255,255,255,0.5);">
+        &copy; 2026 ZaiqaBox Karachi. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Account Logic Script -->
+  <script>
+    (function() {
+      let currentCustomer = null;
+
+      function initAccountPage() {
+        const loggedInSection = document.getElementById("accountLoggedInSection");
+        const notLoggedInBanner = document.getElementById("notLoggedInBanner");
+
+        try {
+          const saved = localStorage.getItem("zaiqabox_customer_user");
+          if (saved) {
+            currentCustomer = JSON.parse(saved);
+          }
+        } catch (e) {
+          currentCustomer = null;
+        }
+
+        if (!currentCustomer || !currentCustomer.FullName) {
+          if (loggedInSection) loggedInSection.style.display = "none";
+          if (notLoggedInBanner) notLoggedInBanner.style.display = "block";
+          return;
+        }
+
+        if (loggedInSection) loggedInSection.style.display = "block";
+        if (notLoggedInBanner) notLoggedInBanner.style.display = "none";
+
+        renderAccountData();
+
+        // Refresh profile data live from backend if customer has ID
+        if (currentCustomer.Id) {
+          fetch(`/api/user/profile/${currentCustomer.Id}`)
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (data && data.customer) {
+                currentCustomer = data.customer;
+                localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+                renderAccountData();
+              }
+            })
+            .catch(() => {});
+        }
+      }
+
+      function renderAccountData() {
+        if (!currentCustomer) return;
+
+        const nameEl = document.getElementById("accCustomerName");
+        const emailEl = document.getElementById("accCustomerEmail");
+        const areaPill = document.getElementById("accAreaPill");
+        const phonePill = document.getElementById("accPhonePill");
+        const planPill = document.getElementById("accPlanStatusPill");
+        const mealStatusPill = document.getElementById("accMealStatusPill");
+        const planBadge = document.getElementById("accActivePlanBadge");
+        const lunchesCount = document.getElementById("accLunchesCount");
+        const deliveryAreaLabel = document.getElementById("accDeliveryAreaLabel");
+        const addressInput = document.getElementById("accOfficeAddressInput");
+        const pauseBtn = document.getElementById("accTogglePauseBtn");
+        const avatarImg = document.getElementById("accAvatarImg");
+        const avatarCircle = document.getElementById("accAvatarCircle");
+        const waBtn = document.getElementById("accWhatsappBtn");
+
+        if (nameEl) nameEl.textContent = currentCustomer.FullName;
+        if (emailEl) emailEl.innerHTML = `<span>✉️</span> ${currentCustomer.Email || 'No email registered'}`;
+        if (areaPill) areaPill.textContent = `📍 ${currentCustomer.Area || 'Clifton'}`;
+        if (phonePill) phonePill.textContent = `📱 ${currentCustomer.Whatsapp || currentCustomer.Phone || 'Not set'}`;
+
+        const isPaused = (currentCustomer.SubscriptionStatus === "Paused");
+        const statusText = isPaused ? "⏸️ Paused" : "🟢 Active";
+        const statusClass = isPaused ? "status-paused" : "status-active";
+
+        if (planPill) {
+          planPill.textContent = statusText;
+          planPill.className = `account-status-badge ${statusClass}`;
+        }
+        if (mealStatusPill) {
+          mealStatusPill.textContent = statusText;
+          mealStatusPill.className = `account-status-badge ${statusClass}`;
+        }
+
+        if (planBadge) planBadge.textContent = currentCustomer.ActivePlan || "Weekly Trial";
+        if (lunchesCount) lunchesCount.textContent = currentCustomer.LunchesRemaining || "5";
+        if (deliveryAreaLabel) deliveryAreaLabel.textContent = `Delivery: ${currentCustomer.Area || 'Clifton'}`;
+        if (addressInput) addressInput.value = currentCustomer.OfficeAddress || "";
+
+        if (pauseBtn) {
+          pauseBtn.innerHTML = isPaused ? "<span>▶️</span> Resume Lunch Delivery" : "<span>⏸️</span> Pause Tomorrow's Lunch";
+          pauseBtn.className = isPaused ? "btn btn-primary btn-block" : "btn btn-outline btn-block";
+        }
+
+        if (waBtn) {
+          const msg = encodeURIComponent(`Hi ZaiqaBox! I am ${currentCustomer.FullName} (${currentCustomer.Email}). I have an inquiry about my ${currentCustomer.ActivePlan} subscription.`);
+          waBtn.href = `https://wa.me/923378034564?text=${msg}`;
+        }
+
+        // Avatar Image & Fallback
+        if (currentCustomer.ProfileImage && avatarImg) {
+          avatarImg.onerror = function() {
+            this.style.display = "none";
+            if (avatarCircle) avatarCircle.style.display = "flex";
+          };
+          avatarImg.src = currentCustomer.ProfileImage;
+          avatarImg.style.display = "block";
+          if (avatarCircle) avatarCircle.style.display = "none";
+        } else {
+          if (avatarImg) avatarImg.style.display = "none";
+          if (avatarCircle) {
+            avatarCircle.style.display = "flex";
+            const initial = (currentCustomer.FullName || "C").charAt(0).toUpperCase();
+            avatarCircle.textContent = initial;
+          }
+        }
+      }
+
+      // Logout handler
+      function handleLogout() {
+        localStorage.removeItem("zaiqabox_customer_user");
+        localStorage.removeItem("zaiqabox_customer_token");
+        alert("You have been signed out.");
+        window.location.href = "index.html";
+      }
+
+      const topLogoutBtn = document.getElementById("accountTopLogoutBtn");
+      const accLogoutBtn = document.getElementById("accLogoutBtn");
+      if (topLogoutBtn) topLogoutBtn.addEventListener("click", handleLogout);
+      if (accLogoutBtn) accLogoutBtn.addEventListener("click", handleLogout);
+
+      // Edit Profile Toggle
+      const toggleEditBtn = document.getElementById("toggleEditProfileBtn");
+      const editBox = document.getElementById("accEditProfileBox");
+      const closeEditBtn = document.getElementById("closeEditProfileBoxBtn");
+      const cancelEditBtn = document.getElementById("cancelEditProfileBoxBtn");
+
+      function openEditProfile() {
+        if (!currentCustomer) return;
+        document.getElementById("accEditName").value = currentCustomer.FullName || "";
+        document.getElementById("accEditWhatsapp").value = currentCustomer.Whatsapp || currentCustomer.Phone || "";
+        document.getElementById("accEditArea").value = currentCustomer.Area || "Clifton";
+        document.getElementById("accEditAddress").value = currentCustomer.OfficeAddress || "";
+        if (editBox) editBox.style.display = "block";
+      }
+
+      function closeEditProfile() {
+        if (editBox) editBox.style.display = "none";
+      }
+
+      if (toggleEditBtn) toggleEditBtn.addEventListener("click", openEditProfile);
+      if (closeEditBtn) closeEditBtn.addEventListener("click", closeEditProfile);
+      if (cancelEditBtn) cancelEditBtn.addEventListener("click", closeEditProfile);
+
+      // Save Profile Form Submit
+      const editForm = document.getElementById("accEditForm");
+      if (editForm) {
+        editForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!currentCustomer || !currentCustomer.Id) return;
+
+          const fullName = document.getElementById("accEditName").value.trim();
+          const whatsapp = document.getElementById("accEditWhatsapp").value.trim();
+          const area = document.getElementById("accEditArea").value;
+          const address = document.getElementById("accEditAddress").value.trim();
+
+          const saveBtn = document.getElementById("saveAccProfileBtn");
+          const saveText = document.getElementById("saveAccProfileText");
+          if (saveBtn) saveBtn.disabled = true;
+          if (saveText) saveText.textContent = "⏳ Saving...";
+
+          try {
+            const res = await fetch("/api/user/update-profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                customerId: currentCustomer.Id,
+                fullName: fullName,
+                whatsapp: whatsapp,
+                area: area,
+                officeAddress: address,
+                profileImage: currentCustomer.ProfileImage || ""
+              })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              currentCustomer.FullName = fullName;
+              currentCustomer.Whatsapp = whatsapp;
+              currentCustomer.Area = area;
+              currentCustomer.OfficeAddress = address;
+              localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+              renderAccountData();
+              closeEditProfile();
+              alert(data.message || "Profile updated successfully!");
+            } else {
+              alert(data.detail || "Could not update profile.");
+            }
+          } catch (err) {
+            alert("Error updating profile. Please try again.");
+          } finally {
+            if (saveBtn) saveBtn.disabled = false;
+            if (saveText) saveText.textContent = "💾 Save Changes";
+          }
+        });
+      }
+
+      // Address Form Submit
+      const addressForm = document.getElementById("accAddressForm");
+      if (addressForm) {
+        addressForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!currentCustomer || !currentCustomer.Id) return;
+
+          const address = document.getElementById("accOfficeAddressInput").value.trim();
+          const saveBtn = document.getElementById("accSaveAddressBtn");
+          if (saveBtn) saveBtn.disabled = true;
+
+          try {
+            const res = await fetch("/api/user/update-address", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                customerId: currentCustomer.Id,
+                officeAddress: address,
+                area: currentCustomer.Area || "Clifton"
+              })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              currentCustomer.OfficeAddress = address;
+              localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+              alert(data.message || "Delivery address updated!");
+            } else {
+              alert(data.detail || "Could not update address.");
+            }
+          } catch (err) {
+            alert("Connection error.");
+          } finally {
+            if (saveBtn) saveBtn.disabled = false;
+          }
+        });
+      }
+
+      // Toggle Pause/Resume Lunch Delivery
+      const pauseBtn = document.getElementById("accTogglePauseBtn");
+      if (pauseBtn) {
+        pauseBtn.addEventListener("click", async () => {
+          if (!currentCustomer || !currentCustomer.Id) return;
+
+          const isPaused = (currentCustomer.SubscriptionStatus === "Paused");
+          const nextAction = isPaused ? "resume" : "pause";
+          pauseBtn.disabled = true;
+
+          try {
+            const res = await fetch("/api/user/pause", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                customerId: currentCustomer.Id,
+                action: nextAction
+              })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              currentCustomer.SubscriptionStatus = isPaused ? "Active" : "Paused";
+              localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+              renderAccountData();
+              alert(data.message || "Subscription updated.");
+            } else {
+              alert(data.detail || "Could not update subscription.");
+            }
+          } catch (err) {
+            alert("Connection error.");
+          } finally {
+            pauseBtn.disabled = false;
+          }
+        });
+      }
+
+      // Avatar File Upload Handler
+      const avatarInput = document.getElementById("accAvatarUploadInput");
+      if (avatarInput) {
+        avatarInput.addEventListener("change", function(e) {
+          const file = e.target.files && e.target.files[0];
+          if (!file || !currentCustomer || !currentCustomer.Id) return;
+
+          if (file.size > 2 * 1024 * 1024) {
+            alert("Image size should be less than 2MB.");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async function(evt) {
+            const base64Img = evt.target.result;
+
+            try {
+              const res = await fetch("/api/user/update-profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  customerId: currentCustomer.Id,
+                  fullName: currentCustomer.FullName,
+                  whatsapp: currentCustomer.Whatsapp || currentCustomer.Phone || "03000000000",
+                  area: currentCustomer.Area || "Clifton",
+                  officeAddress: currentCustomer.OfficeAddress || "",
+                  profileImage: base64Img
+                })
+              });
+              const data = await res.json();
+              if (res.ok) {
+                currentCustomer.ProfileImage = base64Img;
+                localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+                renderAccountData();
+                alert("Profile picture updated!");
+              } else {
+                alert(data.detail || "Could not update profile picture.");
+              }
+            } catch (err) {
+              alert("Connection error while uploading picture.");
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", initAccountPage);
+      if (document.readyState === "interactive" || document.readyState === "complete") {
+        initAccountPage();
+      }
+    })();
+  </script>
+</body>
+</html>

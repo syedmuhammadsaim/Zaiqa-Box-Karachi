@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initLeadForm();
   initEventTracking();
   initCustomerAuthAndPortal(); // Customer Registration, Login & Portal
-  initHomeCalendarShowcase(); // Interactive Meal Pause Calendar on Homepage
 });
 
 function initIntroSplash() {
@@ -703,14 +702,9 @@ function initCustomerAuthAndPortal() {
     });
   }
 
-  // Open/Close Dashboard Modal
+  // Navigate to Account Page
   if (openDashBtn) {
-    openDashBtn.addEventListener("click", () => {
-      if (dashModal && currentCustomer) {
-        populateDashboardUI();
-        dashModal.classList.add("open");
-      }
-    });
+    // Allows link navigation to account.html
   }
   if (closeDashBtn) {
     closeDashBtn.addEventListener("click", () => {
@@ -837,12 +831,9 @@ function initCustomerAuthAndPortal() {
           currentCustomer = data.customer;
           localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
           localStorage.setItem("zaiqabox_customer_token", data.token);
+          if (authModal) authModal.classList.remove("open");
           updateNavCustomerState();
-          showWelcomeMessage(currentCustomer.FullName || "Customer", "Signed in with Google! Enjoy your meal perks.");
-          setTimeout(() => {
-            populateDashboardUI();
-            if (dashModal) dashModal.classList.add("open");
-          }, 600);
+          showWelcomeMessage(currentCustomer.FullName || "Customer", "Signed in with Google! Welcome back.");
         }
       } else {
         alert(data.detail || "Google authentication failed.");
@@ -926,13 +917,10 @@ function initCustomerAuthAndPortal() {
           currentCustomer = data.customer;
           localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
           localStorage.setItem("zaiqabox_customer_token", data.token);
+          if (authModal) authModal.classList.remove("open");
+          if (googleModal) googleModal.classList.remove("open");
           updateNavCustomerState();
-
-          showWelcomeMessage(currentCustomer.FullName || name || "Customer", "Signed in with Google! Enjoy your meal perks.");
-          setTimeout(() => {
-            populateDashboardUI();
-            if (dashModal) dashModal.classList.add("open");
-          }, 600);
+          showWelcomeMessage(currentCustomer.FullName || name || "Customer", "Signed in with Google! Welcome back.");
         }
       } else {
         alert(data.detail || "Google authentication failed. Please try again.");
@@ -1039,14 +1027,9 @@ function initCustomerAuthAndPortal() {
           updateNavCustomerState();
           if (authModal) authModal.classList.remove("open");
 
-          // User-specific welcome message for 2 seconds
+          // User-specific welcome message
           const customerName = currentCustomer.FullName || currentCustomer.name || "Valued Customer";
-          showWelcomeMessage(customerName, "Signed in successfully • Opening your Lunch Portal...");
-
-          setTimeout(() => {
-            populateDashboardUI();
-            if (dashModal) dashModal.classList.add("open");
-          }, 800);
+          showWelcomeMessage(customerName, "Signed in successfully! Welcome to ZaiqaBox.");
         } else {
           alert(data.detail || "Invalid email/username or password.");
         }
@@ -1419,12 +1402,29 @@ function updateNavCustomerState() {
 
     // Show custom profile image if uploaded
     if (currentCustomer.ProfileImage && navAvatarImg) {
+      navAvatarImg.referrerPolicy = "no-referrer";
+      navAvatarImg.onerror = function() {
+        this.style.display = "none";
+        if (navAvatarDot) navAvatarDot.style.display = "inline-block";
+      };
       navAvatarImg.src = currentCustomer.ProfileImage;
       navAvatarImg.style.display = "inline-block";
       if (navAvatarDot) navAvatarDot.style.display = "none";
     } else if (navAvatarImg) {
       navAvatarImg.style.display = "none";
       if (navAvatarDot) navAvatarDot.style.display = "inline-block";
+    }
+
+    const navCustLogout = document.getElementById("navUserLogoutBtn");
+    if (navCustLogout && !navCustLogout._bound) {
+      navCustLogout._bound = true;
+      navCustLogout.addEventListener("click", () => {
+        localStorage.removeItem("zaiqabox_customer_user");
+        localStorage.removeItem("zaiqabox_customer_token");
+        currentCustomer = null;
+        updateNavCustomerState();
+        showToast("Signed out successfully.", "info");
+      });
     }
   } else {
     // 3. Guest (neither admin nor customer):
@@ -1492,239 +1492,4 @@ function populateDashboardUI() {
     waSupportBtn.href = createWhatsAppUrl(waMsg);
   }
 
-  // Load Interactive Meal Pause Calendar for this customer
-  if (currentCustomer.Id) {
-    loadCustomerMealCalendar(currentCustomer.Id);
-  }
 }
-
-// ==========================================
-// INTERACTIVE MEAL PAUSE CALENDAR LOGIC
-// ==========================================
-async function loadCustomerMealCalendar(customerId) {
-  const grid = document.getElementById("mealCalGrid");
-  const activeCountEl = document.getElementById("calActiveCount");
-  const pausedCountEl = document.getElementById("calPausedCount");
-  if (!grid || !customerId) return;
-
-  try {
-    const res = await fetch(`/api/user/calendar/${customerId}`);
-    if (!res.ok) {
-      grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">Could not load meal calendar.</div>`;
-      return;
-    }
-    const data = await res.json();
-    const cal = data.calendar;
-
-    if (activeCountEl) activeCountEl.textContent = cal.total_active_meals || 0;
-    if (pausedCountEl) pausedCountEl.textContent = cal.total_paused_meals || 0;
-
-    if (!cal.schedule || cal.schedule.length === 0) {
-      grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">No working days scheduled.</div>`;
-      return;
-    }
-
-    grid.innerHTML = cal.schedule.map(s => {
-      let actionBtnHtml = "";
-      if (s.is_past) {
-        actionBtnHtml = `<span style="font-size: 0.75rem; color: #64748B; font-weight: 600;">Delivered</span>`;
-      } else if (s.is_locked) {
-        actionBtnHtml = `
-          <button class="cal-btn cal-btn-locked" title="${s.lock_reason || 'Locked after 8:00 PM cutoff'}" disabled>
-            🔒 Locked
-          </button>
-        `;
-      } else if (s.is_paused) {
-        actionBtnHtml = `
-          <button class="cal-btn cal-btn-resume" onclick="handleDatePauseToggle(${customerId}, '${s.date}')">
-            ▶️ Resume
-          </button>
-        `;
-      } else {
-        actionBtnHtml = `
-          <button class="cal-btn cal-btn-pause" onclick="handleDatePauseToggle(${customerId}, '${s.date}')">
-            ⏸️ Pause
-          </button>
-        `;
-      }
-
-      return `
-        <div class="cal-day-card ${s.is_paused ? 'is-paused' : ''} ${s.is_locked ? 'is-locked' : ''}">
-          <div class="cal-day-left">
-            <img src="${s.dish_image}" alt="${s.dish_title}" class="cal-dish-img" onerror="this.src='assets/menu/monday_tikka_bowl.jpg'">
-            <div class="cal-day-info">
-              <div class="cal-day-date">
-                <span>${s.formatted_date}</span>
-                ${s.is_today ? '<span class="cal-tag-today">TODAY</span>' : ''}
-              </div>
-              <div class="cal-dish-name" title="${s.dish_title}">${s.dish_title}</div>
-              <div class="cal-dish-meta">🔥 ${s.calories} kcal • 🥩 ${s.protein}g Protein</div>
-            </div>
-          </div>
-          <div class="cal-day-right">
-            <span class="cal-badge ${s.status_badge}">${s.status_label}</span>
-            ${actionBtnHtml}
-          </div>
-        </div>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error("Calendar load error", err);
-    grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">Failed to load calendar.</div>`;
-  }
-}
-
-// Global handler for clicking pause/resume on a calendar date
-window.handleDatePauseToggle = async function(customerId, dateStr) {
-  try {
-    const res = await fetch("/api/user/calendar/toggle-pause", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId: customerId, date: dateStr })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      showWelcomeMessage(currentCustomer ? currentCustomer.FullName : "Customer", data.message || "Calendar updated successfully!");
-      loadCustomerMealCalendar(customerId);
-    } else {
-      alert(data.detail || "Could not update calendar.");
-    }
-  } catch (err) {
-    alert("Connection error. Please try again.");
-  }
-};
-
-// ==========================================
-// HOME SHOWCASE MEAL PAUSE CALENDAR LOGIC
-// ==========================================
-function initHomeCalendarShowcase() {
-  const container = document.getElementById("homeCalendarDaysGrid");
-  const statActive = document.getElementById("homeStatActive");
-  const statPaused = document.getElementById("homeStatPaused");
-  const portalCtaBtn = document.getElementById("homeCalendarPortalCtaBtn");
-  if (!container) return;
-
-  const sampleSchedule = [
-    {
-      id: "day-mon",
-      dayName: "Monday",
-      formattedDate: "Mon, Nov 24",
-      dishName: "Chicken Tikka Rice Bowl",
-      dishMeta: "High Protein • 520 kcal • Basmati & Kachumber Salad",
-      dishImage: "assets/menu/monday_tikka_bowl.jpg",
-      isPaused: false
-    },
-    {
-      id: "day-tue",
-      dayName: "Tuesday",
-      formattedDate: "Tue, Nov 25",
-      dishName: "Homestyle Daal Palak & Tawa Rotis",
-      dishMeta: "Iron & Fiber Rich • 440 kcal • Lentils & Organic Spinach",
-      dishImage: "assets/menu/tuesday_daal_palak.jpg",
-      isPaused: false
-    },
-    {
-      id: "day-wed",
-      dayName: "Wednesday",
-      formattedDate: "Wed, Nov 26",
-      dishName: "Light Desi Chicken Handi",
-      dishMeta: "Lean Poultry • 510 kcal • Whole Wheat Chapati",
-      dishImage: "assets/menu/wednesday_chicken_handi.jpg",
-      isPaused: false
-    },
-    {
-      id: "day-thu",
-      dayName: "Thursday",
-      formattedDate: "Thu, Nov 27",
-      dishName: "Spiced Chana Medley & Peas Pulao",
-      dishMeta: "Plant Powered • 460 kcal • Tangy Chana & Cooling Raita",
-      dishImage: "assets/menu/monday_tikka_bowl.jpg",
-      isPaused: false
-    },
-    {
-      id: "day-fri",
-      dayName: "Friday",
-      formattedDate: "Fri, Nov 28",
-      dishName: "Grilled Fish / Herb Cutlets Special",
-      dishMeta: "Friday Special • 490 kcal • Herbed Brown Rice",
-      dishImage: "assets/menu/wednesday_chicken_handi.jpg",
-      isPaused: false
-    }
-  ];
-
-  function renderDays() {
-    let activeCount = 0;
-    let pausedCount = 0;
-
-    container.innerHTML = sampleSchedule.map((item, idx) => {
-      if (item.isPaused) pausedCount++;
-      else activeCount++;
-
-      return `
-        <div class="cal-day-card ${item.isPaused ? 'is-paused' : ''}" style="transition: all 0.25s ease;">
-          <div class="cal-day-left">
-            <img src="${item.dishImage}" alt="${item.dishName}" class="cal-dish-img" onerror="this.src='assets/menu/monday_tikka_bowl.jpg'">
-            <div class="cal-day-info">
-              <div class="cal-day-date">
-                <span>${item.formattedDate}</span>
-                <span style="font-size: 0.72rem; color: #6B7280; font-weight: 500;">(${item.dayName})</span>
-              </div>
-              <div class="cal-dish-name">${item.dishName}</div>
-              <div class="cal-dish-meta">${item.dishMeta}</div>
-            </div>
-          </div>
-          <div class="cal-day-right">
-            <span class="cal-badge ${item.isPaused ? 'badge-paused' : 'badge-active'}">
-              ${item.isPaused ? '⏸️ Paused' : '🟢 Active'}
-            </span>
-            <button type="button" class="cal-btn ${item.isPaused ? 'cal-btn-resume' : 'cal-btn-pause'}" data-idx="${idx}" style="min-width: 90px; text-align: center;">
-              ${item.isPaused ? '▶️ Resume' : '⏸️ Pause'}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    if (statActive) statActive.textContent = activeCount;
-    if (statPaused) statPaused.textContent = pausedCount;
-
-    container.querySelectorAll("button[data-idx]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.getAttribute("data-idx"), 10);
-        const day = sampleSchedule[idx];
-        day.isPaused = !day.isPaused;
-        renderDays();
-
-        if (day.isPaused) {
-          showToast(`⏸️ ${day.dayName} meal paused! 1 credit safely rolled over to your next cycle.`, "info", 3500);
-        } else {
-          showToast(`🟢 ${day.dayName} meal resumed! Fresh hot lunch will be delivered by 1:30 PM.`, "success", 3500);
-        }
-      });
-    });
-  }
-
-  renderDays();
-
-  // Handle CTA Button
-  if (portalCtaBtn) {
-    portalCtaBtn.addEventListener("click", () => {
-      if (currentCustomer && currentCustomer.FullName) {
-        const dashModal = document.getElementById("customerDashboardModal");
-        if (dashModal) {
-          populateDashboardUI();
-          dashModal.classList.add("open");
-        }
-      } else {
-        const authModal = document.getElementById("customerAuthModal");
-        if (authModal) {
-          authModal.classList.add("open");
-          const tabLogin = document.getElementById("tabLoginBtn");
-          if (tabLogin) tabLogin.click();
-        }
-      }
-    });
-  }
-}
-
-
