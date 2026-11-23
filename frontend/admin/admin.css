@@ -107,6 +107,15 @@ body {
   display: flex;
 }
 
+/* Prevent login screen flicker on page refresh when already logged in */
+html.admin-logged-in #loginWrapper {
+  display: none !important;
+}
+
+html.admin-logged-in #appShell {
+  display: flex !important;
+}
+
 /* Top Navbar */
 .top-nav {
   height: 68px;

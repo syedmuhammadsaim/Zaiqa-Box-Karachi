@@ -6,6 +6,17 @@
   <title>ZaiqaBox Operations &amp; Admin Dashboard | SSMS Integrated</title>
   <link rel="icon" type="image/png" href="../assets/logo.png">
   <link rel="stylesheet" href="admin.css">
+  <script>
+    // Prevent flash of login screen on page refresh
+    (function() {
+      try {
+        var token = localStorage.getItem("zaiqabox_admin_token") || localStorage.getItem("zaiqa_admin_token");
+        if (token) {
+          document.documentElement.classList.add("admin-logged-in");
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
 

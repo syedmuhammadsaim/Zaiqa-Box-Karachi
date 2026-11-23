@@ -43,15 +43,17 @@ function initAuth() {
   const logoutBtn = document.getElementById("adminLogoutBtn");
 
   if (currentToken) {
+    // Show dashboard immediately on refresh if valid token exists in storage
+    showApp();
     fetch(`${API_BASE}/api/admin/verify`, {
       headers: { "Authorization": `Bearer ${currentToken}` }
     }).then(res => {
-      if (res.ok) {
-        showApp();
-      } else {
+      if (!res.ok) {
         showLogin();
       }
-    }).catch(() => showLogin());
+    }).catch(() => {
+      // Network hiccup - don't kick user out
+    });
   } else {
     showLogin();
   }
@@ -85,17 +87,24 @@ function initAuth() {
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("zaiqabox_admin_token");
-      currentToken = "";
       showLogin();
       showToast("Signed out.");
     });
   }
 
   function showApp() {
+    document.documentElement.classList.add("admin-logged-in");
     if (loginWrapper) loginWrapper.style.display = "none";
-    if (appShell) appShell.classList.add("active");
-    loadDashboardStats();
+    if (appShell) {
+      appShell.classList.add("active");
+      appShell.style.display = "flex";
+    }
+    const savedTab = sessionStorage.getItem("zaiqabox_admin_active_tab") || "overview";
+    if (savedTab && savedTab !== "overview") {
+      switchTab(savedTab);
+    } else {
+      loadDashboardStats();
+    }
     loadMenuItems();
     loadPlans();
     loadDeliveryZones();
@@ -106,8 +115,15 @@ function initAuth() {
   }
 
   function showLogin() {
+    document.documentElement.classList.remove("admin-logged-in");
+    localStorage.removeItem("zaiqabox_admin_token");
+    localStorage.removeItem("zaiqa_admin_token");
+    currentToken = "";
     if (loginWrapper) loginWrapper.style.display = "flex";
-    if (appShell) appShell.classList.remove("active");
+    if (appShell) {
+      appShell.classList.remove("active");
+      appShell.style.display = "none";
+    }
   }
 }
 
@@ -133,6 +149,8 @@ function bindNavigation() {
 }
 
 function switchTab(tabId) {
+  if (!tabId) tabId = "overview";
+  sessionStorage.setItem("zaiqabox_admin_active_tab", tabId);
   const navItems = document.querySelectorAll(".nav-item");
   const panes = document.querySelectorAll(".tab-pane");
 
