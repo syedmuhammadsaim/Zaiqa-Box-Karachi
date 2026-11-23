@@ -173,6 +173,11 @@ class CustomerProfileUpdateRequest(BaseModel):
     profileImage: Optional[str] = None
 
 
+class ToggleDatePauseRequest(BaseModel):
+    customerId: int
+    date: str
+
+
 class AdminLoginRequest(BaseModel):
     username: str
     password: str
@@ -338,6 +343,47 @@ async def customer_profile(customer_id: int):
     if not profile:
         raise HTTPException(status_code=404, detail="Customer not found.")
     return {"status": "success", "profile": profile}
+
+
+@app.get("/api/user/calendar/{customer_id}")
+async def customer_calendar(customer_id: int):
+    data = db.get_customer_calendar(customer_id)
+    return {"status": "success", "calendar": data}
+
+
+@app.post("/api/user/calendar/toggle-pause")
+async def toggle_meal_pause(payload: ToggleDatePauseRequest):
+    from datetime import datetime, timezone, timedelta
+    karachi_tz = timezone(timedelta(hours=5))
+    now_karachi = datetime.now(karachi_tz)
+    today = now_karachi.date()
+    tomorrow = today + timedelta(days=1)
+    
+    try:
+        req_date = datetime.strptime(payload.date, "%Y-%m-%d").date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+    
+    if req_date < today:
+        raise HTTPException(status_code=400, detail="Cannot pause or change past dates.")
+    if req_date == today:
+        raise HTTPException(status_code=400, detail="Today's meal is already in kitchen dispatch and cannot be paused.")
+    if req_date == tomorrow and now_karachi.hour >= 20:
+        raise HTTPException(status_code=400, detail="Cannot pause tomorrow's meal after 8:00 PM cutoff.")
+    
+    result = db.toggle_customer_date_pause(payload.customerId, payload.date)
+    action_text = "paused" if result.get("action") == "paused" else "resumed"
+    formatted = req_date.strftime("%A, %d %b")
+    
+    msg = f"Meal for {formatted} has been {action_text} successfully! Your lunch credits remain safe."
+    
+    updated_cal = db.get_customer_calendar(payload.customerId)
+    return {
+        "status": "success",
+        "action": result.get("action"),
+        "message": msg,
+        "calendar": updated_cal
+    }
 
 
 @app.post("/api/user/pause")

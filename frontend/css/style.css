@@ -2864,3 +2864,168 @@ body.splash-loading {
     transform: translateY(-20px) scale(0.94);
   }
 }
+
+/* ============================================================
+   INTERACTIVE MEAL PAUSE CALENDAR STYLES
+   ============================================================ */
+.meal-cal-grid::-webkit-scrollbar {
+  width: 5px;
+}
+.meal-cal-grid::-webkit-scrollbar-thumb {
+  background: rgba(229, 169, 60, 0.4);
+  border-radius: 4px;
+}
+
+.cal-day-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.cal-day-card:hover {
+  border-color: rgba(229, 169, 60, 0.6);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.cal-day-card.is-paused {
+  background: #FFFBEB;
+  border-color: #FCD34D;
+}
+
+.cal-day-card.is-locked {
+  background: #F8FAFC;
+  opacity: 0.85;
+}
+
+.cal-day-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-dish-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #E2E8F0;
+}
+
+.cal-day-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cal-day-date {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--walnut);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-tag-today {
+  font-size: 0.68rem;
+  background: var(--accent);
+  color: #FFFFFF;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cal-dish-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.cal-dish-meta {
+  font-size: 0.72rem;
+  color: #64748B;
+  margin-top: 1px;
+}
+
+.cal-day-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cal-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-badge.badge-active {
+  background: #DCFCE7;
+  color: #15803D;
+  border: 1px solid #BBF7D0;
+}
+
+.cal-badge.badge-paused {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.cal-badge.badge-delivered {
+  background: #E2E8F0;
+  color: #475569;
+}
+
+.cal-btn {
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+
+.cal-btn-pause {
+  color: #D97706;
+  border-color: #FBBF24;
+}
+.cal-btn-pause:hover {
+  background: #FEF3C7;
+}
+
+.cal-btn-resume {
+  color: #16A34A;
+  border-color: #86EFAC;
+}
+.cal-btn-resume:hover {
+  background: #DCFCE7;
+}
+
+.cal-btn-locked {
+  color: #94A3B8;
+  border-color: #CBD5E1;
+  cursor: not-allowed;
+  background: #F1F5F9;
+}

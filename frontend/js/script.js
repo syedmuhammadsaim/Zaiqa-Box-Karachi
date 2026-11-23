@@ -1232,5 +1232,106 @@ function populateDashboardUI() {
     const waMsg = `Hi ZaiqaBox! I am ${currentCustomer.FullName} (${currentCustomer.Email}). I have an inquiry about my ${currentCustomer.ActivePlan} subscription.`;
     waSupportBtn.href = createWhatsAppUrl(waMsg);
   }
+
+  // Load Interactive Meal Pause Calendar for this customer
+  if (currentCustomer.Id) {
+    loadCustomerMealCalendar(currentCustomer.Id);
+  }
 }
+
+// ==========================================
+// INTERACTIVE MEAL PAUSE CALENDAR LOGIC
+// ==========================================
+async function loadCustomerMealCalendar(customerId) {
+  const grid = document.getElementById("mealCalGrid");
+  const activeCountEl = document.getElementById("calActiveCount");
+  const pausedCountEl = document.getElementById("calPausedCount");
+  if (!grid || !customerId) return;
+
+  try {
+    const res = await fetch(`/api/user/calendar/${customerId}`);
+    if (!res.ok) {
+      grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">Could not load meal calendar.</div>`;
+      return;
+    }
+    const data = await res.json();
+    const cal = data.calendar;
+
+    if (activeCountEl) activeCountEl.textContent = cal.total_active_meals || 0;
+    if (pausedCountEl) pausedCountEl.textContent = cal.total_paused_meals || 0;
+
+    if (!cal.schedule || cal.schedule.length === 0) {
+      grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">No working days scheduled.</div>`;
+      return;
+    }
+
+    grid.innerHTML = cal.schedule.map(s => {
+      let actionBtnHtml = "";
+      if (s.is_past) {
+        actionBtnHtml = `<span style="font-size: 0.75rem; color: #64748B; font-weight: 600;">Delivered</span>`;
+      } else if (s.is_locked) {
+        actionBtnHtml = `
+          <button class="cal-btn cal-btn-locked" title="${s.lock_reason || 'Locked after 8:00 PM cutoff'}" disabled>
+            🔒 Locked
+          </button>
+        `;
+      } else if (s.is_paused) {
+        actionBtnHtml = `
+          <button class="cal-btn cal-btn-resume" onclick="handleDatePauseToggle(${customerId}, '${s.date}')">
+            ▶️ Resume
+          </button>
+        `;
+      } else {
+        actionBtnHtml = `
+          <button class="cal-btn cal-btn-pause" onclick="handleDatePauseToggle(${customerId}, '${s.date}')">
+            ⏸️ Pause
+          </button>
+        `;
+      }
+
+      return `
+        <div class="cal-day-card ${s.is_paused ? 'is-paused' : ''} ${s.is_locked ? 'is-locked' : ''}">
+          <div class="cal-day-left">
+            <img src="${s.dish_image}" alt="${s.dish_title}" class="cal-dish-img" onerror="this.src='assets/menu/monday_tikka_bowl.jpg'">
+            <div class="cal-day-info">
+              <div class="cal-day-date">
+                <span>${s.formatted_date}</span>
+                ${s.is_today ? '<span class="cal-tag-today">TODAY</span>' : ''}
+              </div>
+              <div class="cal-dish-name" title="${s.dish_title}">${s.dish_title}</div>
+              <div class="cal-dish-meta">🔥 ${s.calories} kcal • 🥩 ${s.protein}g Protein</div>
+            </div>
+          </div>
+          <div class="cal-day-right">
+            <span class="cal-badge ${s.status_badge}">${s.status_label}</span>
+            ${actionBtnHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error("Calendar load error", err);
+    grid.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">Failed to load calendar.</div>`;
+  }
+}
+
+// Global handler for clicking pause/resume on a calendar date
+window.handleDatePauseToggle = async function(customerId, dateStr) {
+  try {
+    const res = await fetch("/api/user/calendar/toggle-pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId: customerId, date: dateStr })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showWelcomeMessage(currentCustomer ? currentCustomer.FullName : "Customer", data.message || "Calendar updated successfully!");
+      loadCustomerMealCalendar(customerId);
+    } else {
+      alert(data.detail || "Could not update calendar.");
+    }
+  } catch (err) {
+    alert("Connection error. Please try again.");
+  }
+};
 

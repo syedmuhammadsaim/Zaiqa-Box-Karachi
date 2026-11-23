@@ -831,6 +831,127 @@ class DatabaseManager:
         conn.close()
         return True
 
+    # --- MEAL CALENDAR & PAUSE DATES ---
+    def get_customer_paused_dates(self, customer_id: int) -> List[str]:
+        conn = self.get_conn()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT PauseDate FROM CustomerPausedDates WHERE CustomerId = ? ORDER BY PauseDate ASC", (customer_id,))
+            rows = cur.fetchall()
+            return [r[0] for r in rows]
+        except Exception as e:
+            return []
+        finally:
+            conn.close()
+
+    def toggle_customer_date_pause(self, customer_id: int, date_str: str) -> Dict[str, Any]:
+        conn = self.get_conn()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT Id FROM CustomerPausedDates WHERE CustomerId = ? AND PauseDate = ?", (customer_id, date_str))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute("DELETE FROM CustomerPausedDates WHERE CustomerId = ? AND PauseDate = ?", (customer_id, date_str))
+                action = "resumed"
+            else:
+                cur.execute("INSERT INTO CustomerPausedDates (CustomerId, PauseDate) VALUES (?, ?)", (customer_id, date_str))
+                action = "paused"
+            conn.commit()
+            
+            cur.execute("SELECT PauseDate FROM CustomerPausedDates WHERE CustomerId = ? ORDER BY PauseDate ASC", (customer_id,))
+            paused_dates = [r[0] for r in cur.fetchall()]
+            return {"status": "success", "action": action, "date": date_str, "paused_dates": paused_dates}
+        finally:
+            conn.close()
+
+    def get_customer_calendar(self, customer_id: int) -> Dict[str, Any]:
+        from datetime import datetime, timezone, timedelta
+        karachi_tz = timezone(timedelta(hours=5))
+        now_karachi = datetime.now(karachi_tz)
+        today = now_karachi.date()
+        is_after_8pm = now_karachi.hour >= 20
+
+        # Customer details
+        customer = self.get_customer_profile(customer_id) or {}
+        paused_dates = set(self.get_customer_paused_dates(customer_id))
+        
+        # Menu dishes map
+        menu_items = self.get_menu_items()
+        dishes_by_day = {m["DayOfWeek"].capitalize(): m for m in menu_items if m.get("IsActive")}
+
+        # Build next 10 corporate working days (Mon-Fri)
+        working_days = []
+        curr = today
+        while len(working_days) < 10:
+            if curr.weekday() < 5: # 0=Mon, 4=Fri
+                working_days.append(curr)
+            curr += timedelta(days=1)
+
+        tomorrow = today + timedelta(days=1)
+        schedule = []
+        for d in working_days:
+            d_str = d.strftime("%Y-%m-%d")
+            day_name = d.strftime("%A")
+            dish_info = dishes_by_day.get(day_name, {
+                "Title": "Homestyle Chef Special Meal",
+                "Description": "Fresh homestyle healthy meal prepared with clean ingredients.",
+                "Sides": "Whole-wheat roti or rice, garden salad & raita",
+                "ImageUrl": "assets/menu/monday_tikka_bowl.jpg",
+                "Calories": 500,
+                "ProteinGrams": 30
+            })
+
+            is_today = (d == today)
+            is_past = (d < today)
+            is_tomorrow = (d == tomorrow)
+            
+            # 8:00 PM cutoff rule: today cannot be paused; tomorrow cannot be paused after 8 PM
+            is_locked = is_past or is_today or (is_tomorrow and is_after_8pm)
+            is_paused = d_str in paused_dates
+
+            if is_past:
+                status_label = "Delivered"
+                status_badge = "badge-delivered"
+            elif is_paused:
+                status_label = "Paused"
+                status_badge = "badge-paused"
+            else:
+                status_label = "Scheduled"
+                status_badge = "badge-active"
+
+            schedule.append({
+                "date": d_str,
+                "day": day_name,
+                "formatted_date": d.strftime("%a, %d %b"),
+                "dish_title": dish_info.get("Title"),
+                "dish_desc": dish_info.get("Description"),
+                "dish_sides": dish_info.get("Sides"),
+                "dish_image": dish_info.get("ImageUrl"),
+                "calories": dish_info.get("Calories"),
+                "protein": dish_info.get("ProteinGrams"),
+                "is_today": is_today,
+                "is_past": is_past,
+                "is_locked": is_locked,
+                "is_paused": is_paused,
+                "status_label": status_label,
+                "status_badge": status_badge,
+                "lock_reason": "Locked after 8:00 PM cutoff" if is_locked and not is_past else ""
+            })
+
+        active_count = sum(1 for s in schedule if not s["is_paused"] and not s["is_past"])
+        paused_count = sum(1 for s in schedule if s["is_paused"])
+
+        return {
+            "schedule": schedule,
+            "paused_dates": list(paused_dates),
+            "total_active_meals": active_count,
+            "total_paused_meals": paused_count,
+            "lunches_remaining": customer.get("LunchesRemaining", 5),
+            "cutoff_hour": 20,
+            "is_after_8pm": is_after_8pm,
+            "customer_name": customer.get("FullName", "Customer")
+        }
+
     # --- AUTHENTICATION ---
     def verify_admin(self, username: str, password: str) -> Optional[Dict[str, Any]]:
         clean_user = str(username or "").strip().lower()

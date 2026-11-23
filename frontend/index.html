@@ -978,17 +978,36 @@
         </a>
       </div>
 
-      <!-- 1-Click Pause Lunch Control -->
-      <div class="dash-action-card">
-        <div class="dash-action-title">
-          <span>⏸️</span> Pause or Resume Lunch
+      <!-- INTERACTIVE MEAL PAUSE CALENDAR -->
+      <div class="dash-action-card meal-calendar-card" id="dashCalendarCard" style="background: #FFFFFF; border: 1.5px solid rgba(229, 169, 60, 0.45); border-radius: var(--radius-sm); padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 8px;">
+          <div class="dash-action-title" style="color: var(--walnut); font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 0;">
+            <span>📅</span> Interactive Meal Pause Calendar
+          </div>
+          <span style="font-size: 0.78rem; background: rgba(229, 169, 60, 0.15); color: #B3740D; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
+            ⏰ 8:00 PM Cutoff
+          </span>
         </div>
-        <p class="dash-action-desc">
-          Travelling or working from home tomorrow? Pause your meal anytime before <strong>8:00 PM</strong> tonight. Your lunch credits roll over forward.
+        <p class="dash-action-desc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem; line-height: 1.4;">
+          Pause or resume individual workday lunches below. Paused meals never expire — your credits automatically roll forward!
         </p>
-        <button class="btn btn-outline btn-block" id="dashTogglePauseBtn">
-          <span>⏸️</span> Pause Tomorrow's Lunch
-        </button>
+
+        <!-- Calendar Summary Stats Bar -->
+        <div class="meal-cal-summary" style="display: flex; gap: 10px; margin-bottom: 0.85rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 120px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 6px 12px; border-radius: 8px;">
+            <div style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700;">Active Lunches</div>
+            <div id="calActiveCount" style="font-size: 1.15rem; font-weight: 800; color: #16A34A;">--</div>
+          </div>
+          <div style="flex: 1; min-width: 120px; background: #FEF3C7; border: 1px solid #FDE68A; padding: 6px 12px; border-radius: 8px;">
+            <div style="font-size: 0.72rem; color: #92400E; text-transform: uppercase; font-weight: 700;">Paused (Saved)</div>
+            <div id="calPausedCount" style="font-size: 1.15rem; font-weight: 800; color: #D97706;">--</div>
+          </div>
+        </div>
+
+        <!-- Working Days List -->
+        <div class="meal-cal-grid" id="mealCalGrid" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 340px; overflow-y: auto; padding-right: 4px;">
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading your lunch schedule...</div>
+        </div>
       </div>
 
       <!-- Update Delivery Address Control -->
