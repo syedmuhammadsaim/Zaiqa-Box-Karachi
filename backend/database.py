@@ -772,6 +772,46 @@ class DatabaseManager:
             return user
         return None
 
+    def login_or_register_google_customer(self, full_name: str, email: str, profile_image: str = "", google_id: str = "") -> Optional[Dict[str, Any]]:
+        conn = self.get_conn()
+        cur = conn.cursor()
+        clean_email = str(email or "").strip().lower()
+        clean_name = str(full_name or "").strip() or clean_email.split("@")[0].capitalize()
+        try:
+            # Check if customer already exists with this email
+            cur.execute("SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage FROM Customers WHERE Email = ?", (clean_email,))
+            row = cur.fetchone()
+            if row:
+                user = dict(zip([c[0] for c in cur.description], row)) if not hasattr(row, "keys") else dict(row)
+                if profile_image and not user.get("ProfileImage"):
+                    cur.execute("UPDATE Customers SET ProfileImage = ? WHERE Id = ?", (profile_image, user["Id"]))
+                    conn.commit()
+                    user["ProfileImage"] = profile_image
+                conn.close()
+                return user
+
+            # Auto-register new customer from Google account
+            sql = """
+            INSERT INTO Customers (FullName, Email, PasswordHash, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage)
+            VALUES (?, ?, ?, '923001234567', 'Clifton', 'Karachi Hub', 'Weekly Trial', 5, 'Active', ?)
+            """
+            cur.execute(sql, (clean_name, clean_email, f"GOOGLE_OAUTH_{google_id or 'VERIFIED'}", profile_image or None))
+            conn.commit()
+
+            cur.execute("SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage FROM Customers WHERE Email = ?", (clean_email,))
+            row = cur.fetchone()
+            conn.close()
+            if not row:
+                return None
+            return dict(zip([c[0] for c in cur.description], row)) if not hasattr(row, "keys") else dict(row)
+        except Exception as e:
+            print(f"[DB Error] Google auth error: {e}")
+            try:
+                conn.close()
+            except Exception:
+                pass
+            return None
+
     def get_customer_profile(self, customer_id: int) -> Optional[Dict[str, Any]]:
         conn = self.get_conn()
         cur = conn.cursor()

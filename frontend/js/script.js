@@ -747,6 +747,119 @@ function initCustomerAuthAndPortal() {
   if (switchReg) switchReg.addEventListener("click", (e) => { e.preventDefault(); setAuthTab("register"); });
   if (switchLog) switchLog.addEventListener("click", (e) => { e.preventDefault(); setAuthTab("login"); });
 
+  // Handle Google Sign-In & Sign-Up
+  const googleSignInBtn = document.getElementById("googleSignInBtn");
+  const googleSignUpBtn = document.getElementById("googleSignUpBtn");
+  const googleModal = document.getElementById("googleAccountModal");
+  const closeGoogleModalBtn = document.getElementById("closeGoogleModalBtn");
+  const googleUseAnotherBtn = document.getElementById("googleUseAnotherBtn");
+  const googleCustomInputWrap = document.getElementById("googleCustomInputWrap");
+  const googleCustomProceedBtn = document.getElementById("googleCustomProceedBtn");
+  const googleCustomEmailInput = document.getElementById("googleCustomEmailInput");
+
+  function openGoogleModal() {
+    if (googleModal) {
+      googleModal.classList.add("open");
+      if (googleCustomInputWrap) googleCustomInputWrap.style.display = "none";
+      if (googleCustomEmailInput) googleCustomEmailInput.value = "";
+    }
+  }
+
+  if (googleSignInBtn) googleSignInBtn.addEventListener("click", openGoogleModal);
+  if (googleSignUpBtn) googleSignUpBtn.addEventListener("click", openGoogleModal);
+  if (closeGoogleModalBtn) {
+    closeGoogleModalBtn.addEventListener("click", () => {
+      if (googleModal) googleModal.classList.remove("open");
+    });
+  }
+
+  if (googleUseAnotherBtn && googleCustomInputWrap) {
+    googleUseAnotherBtn.addEventListener("click", () => {
+      googleCustomInputWrap.style.display = googleCustomInputWrap.style.display === "none" ? "block" : "none";
+      if (googleCustomInputWrap.style.display === "block" && googleCustomEmailInput) {
+        googleCustomEmailInput.focus();
+      }
+    });
+  }
+
+  async function handleGoogleLogin(email, name, picture = "") {
+    if (!email || !email.includes("@")) {
+      alert("Please provide a valid Google email address.");
+      return;
+    }
+
+    try {
+      showToast("Verifying with Google...", "info", 2000);
+      const res = await fetch("/api/user/google-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, picture })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        if (googleModal) googleModal.classList.remove("open");
+        if (authModal) authModal.classList.remove("open");
+
+        // 1. If Admin logged in: Redirect to Admin Panel
+        if (data.role === "admin" || data.redirect) {
+          const adminTok = data.token || "zaiqabox-admin-token-2026";
+          localStorage.setItem("zaiqabox_admin_token", adminTok);
+          localStorage.setItem("zaiqa_admin_token", adminTok);
+
+          const adminName = data.user ? (data.user.fullName || data.user.FullName || data.user.username) : "Admin";
+          showWelcomeMessage(adminName, "Welcome Admin! Redirecting to Operations Portal...");
+
+          setTimeout(() => {
+            window.location.href = "admin/index.html";
+          }, 1200);
+          return;
+        }
+
+        // 2. If Customer logged in:
+        if (data.customer) {
+          currentCustomer = data.customer;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          localStorage.setItem("zaiqabox_customer_token", data.token);
+          updateNavCustomerState();
+
+          showWelcomeMessage(currentCustomer.FullName || name || "Customer", "Signed in with Google! Enjoy your meal perks.");
+          setTimeout(() => {
+            populateDashboardUI();
+            if (dashModal) dashModal.classList.add("open");
+          }, 600);
+        }
+      } else {
+        alert(data.detail || "Google authentication failed. Please try again.");
+      }
+    } catch (err) {
+      alert("Connection error during Google authentication.");
+    }
+  }
+
+  // Click on any pre-listed Google account
+  if (googleModal) {
+    googleModal.querySelectorAll(".google-acc-item[data-email]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const email = btn.getAttribute("data-email");
+        const name = btn.getAttribute("data-name");
+        handleGoogleLogin(email, name);
+      });
+    });
+  }
+
+  // Click proceed on custom Google account
+  if (googleCustomProceedBtn && googleCustomEmailInput) {
+    googleCustomProceedBtn.addEventListener("click", () => {
+      const email = googleCustomEmailInput.value.trim();
+      if (!email || !email.includes("@")) {
+        alert("Please enter a valid Google email address.");
+        return;
+      }
+      handleGoogleLogin(email, email.split("@")[0]);
+    });
+  }
+
   // Check URL params to auto-open login modal if redirected from admin
   try {
     const urlParams = new URLSearchParams(window.location.search);

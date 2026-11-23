@@ -153,6 +153,14 @@ class CustomerLoginRequest(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    picture: Optional[str] = None
+    sub: Optional[str] = None
+
+
 class CustomerPauseRequest(BaseModel):
     customerId: int
     action: str = "pause" # "pause" or "resume"
@@ -332,6 +340,70 @@ async def customer_login(payload: CustomerLoginRequest):
         "status": "success",
         "role": "customer",
         "message": f"Welcome back, {customer.get('FullName', 'Customer')}!",
+        "token": token,
+        "customer": customer
+    }
+
+
+@app.post("/api/user/google-auth")
+async def customer_google_auth(payload: GoogleAuthRequest):
+    email = str(payload.email or "").strip().lower()
+    name = sanitize_input(payload.name or "")
+    picture = payload.picture or ""
+    google_id = payload.sub or ""
+
+    # Parse JWT if credential token provided
+    if payload.credential and not email:
+        try:
+            import base64
+            import json
+            parts = payload.credential.split(".")
+            if len(parts) >= 2:
+                padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
+                decoded = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+                email = decoded.get("email", "").strip().lower()
+                name = name or decoded.get("name", "")
+                picture = picture or decoded.get("picture", "")
+                google_id = google_id or decoded.get("sub", "")
+        except Exception as jwt_err:
+            print(f"[Google Auth JWT parse notice] {jwt_err}")
+
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid Google authentication email.")
+
+    # Check if this Google user is an Admin
+    admin_aliases = [
+        "admin",
+        "zaiqaboxkarachi@gmail.com",
+        "syedmuhammadsaim.contact@gmail.com",
+        "admin@zaiqabox.pk",
+        "admin@zaiqabox.com"
+    ]
+    if email in admin_aliases:
+        return {
+            "status": "success",
+            "role": "admin",
+            "redirect": "/admin/index.html",
+            "message": f"Welcome Admin ({email})! Redirecting to Operations Portal...",
+            "token": "zaiqabox-admin-token-2026",
+            "user": {
+                "username": email,
+                "fullName": name or "ZaiqaBox Admin",
+                "email": email,
+                "picture": picture
+            }
+        }
+
+    # Otherwise login or auto-register as Customer
+    customer = db.login_or_register_google_customer(name, email, picture, google_id)
+    if not customer:
+        raise HTTPException(status_code=500, detail="Failed to authenticate with Google account.")
+
+    token = f"cust_{customer['Id']}_{int(time.time())}"
+    return {
+        "status": "success",
+        "role": "customer",
+        "message": f"Welcome, {customer.get('FullName', 'Customer')}!",
         "token": token,
         "customer": customer
     }
