@@ -83,7 +83,13 @@ class ChatbotWidget {
     msgDiv.className = `chat-msg ${role} ${isHandoff ? 'handoff-box' : ''}`;
 
     if (isHandoff) {
-      const waHandoffMsg = `Hi ZaiqaBox! I have a dietary question and would like to consult your human nutritionist: "${text.substring(0, 80)}..."`;
+      const isDietary = /nutrition|diet|medical|sugar|wazan|allergy|claim/i.test(text);
+      const waHandoffMsg = isDietary
+        ? `Hi ZaiqaBox! I have a dietary question and would like to consult your human nutritionist: "${text.substring(0, 80)}..."`
+        : `Hi ZaiqaBox! I would like to speak directly with your customer support team regarding corporate lunches.`;
+      const waBtnText = isDietary
+        ? "Chat with Human Nutritionist on WhatsApp"
+        : "Chat with Our Human Team on WhatsApp";
       const waUrl = createWhatsAppUrl(waHandoffMsg);
 
       msgDiv.innerHTML = `
@@ -92,7 +98,7 @@ class ChatbotWidget {
           <button class="chat-speak-btn" title="Listen (Voice Playback)">🔊 Suniye</button>
         </div>
         <a href="${waUrl}" class="handoff-cta-btn" target="_blank" rel="noopener">
-          <span>💬</span> Chat with Human Nutritionist on WhatsApp
+          <span>💬</span> ${waBtnText}
         </a>
       `;
     } else if (role === "bot") {

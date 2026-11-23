@@ -13,7 +13,7 @@ import asyncio
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
+from email.utils import formataddr, formatdate, make_msgid
 from typing import Dict, Any, Tuple
 from dotenv import load_dotenv
 
@@ -77,11 +77,12 @@ def _send_smtp_html(to_email: str, subject: str, html_content: str, reply_to: st
         msg["To"] = to_email.strip()
         if reply_to:
             msg["Reply-To"] = reply_to.strip()
-        msg["X-Priority"] = "1"
-        msg["X-MSMail-Priority"] = "High"
-        msg["Importance"] = "High"
+        
+        # Standard RFC compliant headers for clean inbox placement
+        msg["Date"] = formatdate(localtime=True)
+        msg["Message-ID"] = make_msgid(domain="gmail.com")
 
-        # Generate plain text version (prevents Gmail spam filter from flagging HTML-only email)
+        # Generate clean plain text version (prevents spam filters from penalizing HTML-only emails)
         plain_text = re.sub(r'<style.*?</style>', '', html_content, flags=re.DOTALL)
         plain_text = re.sub(r'<[^>]+>', ' ', plain_text)
         plain_text = re.sub(r'\s+', ' ', plain_text).strip()
@@ -177,52 +178,55 @@ def build_admin_alert_html(lead_data: Dict[str, Any]) -> str:
     whatsapp = lead_data.get("whatsapp", "N/A")
     area = lead_data.get("area", "N/A")
     plan = lead_data.get("plan", "N/A")
-    summary = lead_data.get("ai_summary", "New corporate lunch inquiry received via website.")
+    summary = lead_data.get("ai_summary", "New corporate lunch request.")
     timestamp = lead_data.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    wa_direct = f"https://wa.me/{whatsapp}?text=Hi%20{name},%20this%20is%20ZaiqaBox%20Karachi.%20Thank%20you%20for%20inquiring%20about%20our%20{plan}!"
 
     return f"""
     <!DOCTYPE html>
     <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body {{ font-family: Arial, sans-serif; background: #0F172A; color: #F8FAFC; margin: 0; padding: 20px; }}
-        .card {{ max-width: 620px; margin: 0 auto; background: #1E293B; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }}
-        .card-header {{ background: #F5A623; color: #140C07; padding: 20px 24px; font-weight: 800; font-size: 20px; }}
-        .card-body {{ padding: 24px; font-size: 14px; line-height: 1.6; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
-        td {{ padding: 10px 12px; border-bottom: 1px solid #334155; }}
-        td.label {{ font-weight: bold; width: 35%; color: #94A3B8; }}
-        td.val {{ color: #F8FAFC; }}
-        .btn {{ display: inline-block; background: #25D366; color: #FFFFFF; font-weight: bold; text-decoration: none; padding: 12px 20px; border-radius: 6px; }}
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <div class="card-header">
-          New ZaiqaBox Corporate Lead Received
-        </div>
-        <div class="card-body">
-          <p style="color: #F8FAFC; font-size: 15px;">A new corporate client has submitted an inquiry / plan order on ZaiqaBox Karachi:</p>
-          <table>
-            <tr><td class="label">Customer Name:</td><td class="val"><strong>{name}</strong></td></tr>
-            <tr><td class="label">Email Address:</td><td class="val"><a href="mailto:{email}" style="color: #38BDF8;">{email}</a></td></tr>
-            <tr><td class="label">WhatsApp Number:</td><td class="val"><a href="{wa_direct}" style="color: #25D366; font-weight: bold;">{whatsapp}</a></td></tr>
-            <tr><td class="label">Office Location:</td><td class="val">{area}</td></tr>
-            <tr><td class="label">Requested Plan:</td><td class="val"><span style="background: #0284C7; padding: 3px 8px; border-radius: 4px; font-size: 13px;">{plan}</span></td></tr>
-            <tr><td class="label">AI Lead Summary:</td><td class="val">{summary}</td></tr>
-            <tr><td class="label">Submission Time:</td><td class="val">{timestamp}</td></tr>
-          </table>
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: Arial, sans-serif; font-size: 15px; color: #1e293b; line-height: 1.6; background-color: #ffffff; padding: 20px;">
+      <h2 style="color: #2E7D32; margin-top: 0; font-size: 20px;">New ZaiqaBox Corporate Lunch Order</h2>
+      <p>Hello Team,</p>
+      <p>A new customer has just submitted their lunch details on the ZaiqaBox Karachi website:</p>
+      
+      <table style="border-collapse: collapse; width: 100%; max-width: 550px; margin: 20px 0; border: 1px solid #cbd5e1;">
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold; width: 35%;">Customer Name:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong>{name}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">WhatsApp / Phone:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><a href="https://wa.me/{whatsapp}" style="color: #25d366; font-weight: bold;">{whatsapp}</a></td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">Email:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><a href="mailto:{email}">{email}</a></td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">Delivery Area:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1;">{area}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">Interested Plan:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; color: #0284c7; font-weight: bold;">{plan}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">Inquiry Notes:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1;">{summary}</td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">Date & Time:</td>
+          <td style="padding: 10px 14px; border: 1px solid #cbd5e1;">{timestamp}</td>
+        </tr>
+      </table>
 
-          <div style="margin-top: 24px; text-align: center;">
-            <a href="{wa_direct}" class="btn">💬 Chat Customer on WhatsApp</a>
-          </div>
-          <p style="font-size: 12px; color: #94A3B8; text-align: center; margin-top: 15px;">
-            Reply to this email directly to contact {email}.
-          </p>
-        </div>
-      </div>
+      <p style="margin-top: 20px;">
+        To contact the customer immediately, reply to this email directly or message them on WhatsApp: <a href="https://wa.me/{whatsapp}">https://wa.me/{whatsapp}</a>
+      </p>
+      <p style="font-size: 13px; color: #64748b; margin-top: 30px;">
+        ZaiqaBox Karachi automated lead dispatch notification.
+      </p>
     </body>
     </html>
     """
@@ -230,16 +234,21 @@ def build_admin_alert_html(lead_data: Dict[str, Any]) -> str:
 
 async def send_dual_lead_emails(lead_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Sends email to customer and email to admin (zaiqaboxkarachi@gmail.com) concurrently in background threads.
+    Sends email to customer and email to admin (zaiqaboxkarachi@gmail.com and backup owner) concurrently in background threads.
     Logs every email to sent_emails_log.json.
     """
     cfg = get_smtp_config()
     customer_email = lead_data.get("email")
-    admin_recipient = cfg["admin_email"] or "zaiqaboxkarachi@gmail.com"
+
+    # Ensure notifications reach both zaiqaboxkarachi@gmail.com and owner address
+    admin_raw = cfg["admin_email"] or "zaiqaboxkarachi@gmail.com"
+    admin_recipients = [r.strip() for r in admin_raw.split(",") if r.strip()]
+    for target in ["zaiqaboxkarachi@gmail.com", "syedmuhammadsaim.contact@gmail.com"]:
+        if target not in admin_recipients:
+            admin_recipients.append(target)
 
     customer_subject = f"🍱 Welcome to ZaiqaBox Karachi - Your Corporate Lunch Guide & {lead_data.get('plan', 'Plan')} Details"
-    # Professional, anti-spam optimized subject for admin
-    admin_subject = f"[ZaiqaBox Lead] New Corporate Lunch Inquiry - {lead_data.get('name', 'Client')} ({lead_data.get('area', 'Karachi')} | {lead_data.get('plan', 'Plan')})"
+    admin_subject = f"New Corporate Lunch Order - {lead_data.get('name', 'Client')} ({lead_data.get('plan', 'Plan')})"
 
     customer_html = build_customer_email_html(lead_data)
     admin_html = build_admin_alert_html(lead_data)
@@ -251,21 +260,21 @@ async def send_dual_lead_emails(lead_data: Dict[str, Any]) -> Dict[str, Any]:
         _log_email_to_file(customer_email, customer_subject, "customer_confirmation", lead_data, sent, status_msg)
         return sent, status_msg
 
-    async def _send_adm():
-        # Set reply-to to customer email so admin can reply directly!
-        sent, status_msg = await asyncio.to_thread(_send_smtp_html, admin_recipient, admin_subject, admin_html, customer_email or "")
-        _log_email_to_file(admin_recipient, admin_subject, "admin_alert", lead_data, sent, status_msg)
+    async def _send_adm_target(recipient: str):
+        sent, status_msg = await asyncio.to_thread(_send_smtp_html, recipient, admin_subject, admin_html, customer_email or "")
+        _log_email_to_file(recipient, admin_subject, "admin_alert", lead_data, sent, status_msg)
         return sent, status_msg
 
-    cust_res, adm_res = await asyncio.gather(_send_cust(), _send_adm(), return_exceptions=True)
+    tasks = [_send_cust()] + [_send_adm_target(r) for r in admin_recipients]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    cust_sent = cust_res[0] if isinstance(cust_res, tuple) else False
-    adm_sent = adm_res[0] if isinstance(adm_res, tuple) else False
+    cust_sent = results[0][0] if (isinstance(results[0], tuple) and len(results[0]) > 0) else False
+    adm_sent = any(r[0] for r in results[1:] if (isinstance(r, tuple) and len(r) > 0))
 
-    print(f"[Email Service] Form submission: Admin mail ({admin_recipient}) sent: {adm_sent}, Customer mail ({customer_email}) sent: {cust_sent}")
+    print(f"[Email Service] Lead email results - Admin targets ({admin_recipients}): {results[1:]}, Customer ({customer_email}): {cust_sent}")
 
     return {
-        "admin_recipient": admin_recipient,
+        "admin_recipients": admin_recipients,
         "customer_recipient": customer_email,
         "admin_email_sent": adm_sent,
         "customer_email_sent": cust_sent,

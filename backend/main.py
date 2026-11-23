@@ -640,7 +640,8 @@ def is_roman_urdu(text: str) -> bool:
         "kya hai", "kya hy", "kya he", "kitna hai", "kitne ka", "kitnay ka", "kahan deliver",
         "kaise karein", "kaise karo", "batao", "batayein", "bataiye", "chahiye", "mangwana hai",
         "order karna", "paise kitne", "kitne rupay", "khana kaisa", "salam", "assalam", "bhai",
-        "shukriya", "chutti hai", "theek hai", "nahi chahiye", "kaun sa", "kab ayega", "kab aayega"
+        "shukriya", "chutti hai", "theek hai", "nahi chahiye", "kaun sa", "kab ayega", "kab aayega",
+        "baat karni", "baat karna", "bande se", "insan se"
     ]
     if any(p in lower for p in distinct_urdu_phrases):
         return True
@@ -651,7 +652,7 @@ def is_roman_urdu(text: str) -> bool:
         "kaise", "kahan", "kider", "kidhar", "bolo", "batayein", "batao", "bataiye",
         "nahi", "chahiye", "dedo", "hafta", "mahina", "paise", "rupay", "mujhe",
         "shukriya", "theek", "chutti", "roti", "salan", "daal", "sabzi", "bhejo",
-        "mangwana", "aapka", "humara", "tumhara", "khana"
+        "mangwana", "aapka", "humara", "tumhara", "khana", "baat", "karni", "bande", "insan"
     }
     words = set(re.findall(r'\b[a-z]+\b', lower))
     matches = len(words.intersection(urdu_markers))
@@ -674,11 +675,68 @@ async def chat_endpoint(payload: ChatRequest):
     # STEP 1: Guardrail check
     is_blocked, handoff_reply, detected_reason = check_input_guardrails(user_msg)
     if is_blocked:
+        audio_b64 = ""
+        if DEEPGRAM_API_KEY:
+            try:
+                url = f"https://api.deepgram.com/v1/speak?model={DEEPGRAM_TTS_VOICE}"
+                headers = {
+                    "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                body = {"text": handoff_reply[:180]}
+                tts_res = await voice_client.post(url, headers=headers, json=body)
+                if tts_res.status_code == 200:
+                    audio_b64 = base64.b64encode(tts_res.content).decode("utf-8")
+            except Exception as e:
+                print(f"[Guardrail TTS Error] {e}")
+
         return {
             "reply": handoff_reply,
             "handoff": True,
             "sources": [],
-            "reason": f"Medical/Dietary guardrail triggered ({detected_reason})"
+            "reason": f"Medical/Dietary guardrail triggered ({detected_reason})",
+            "audio_base64": audio_b64
+        }
+
+    # STEP 1.5: Human Agent / Support Request Handoff
+    human_keywords = [
+        "human", "representative", "live agent", "real person", "person", "support",
+        "customer care", "customer support", "call me", "call", "agent", "talk to human",
+        "talk to a human", "talk to someone", "speak to someone", "banda", "banday",
+        "insan", "baat karni", "rabta"
+    ]
+    lower_msg = user_msg.lower()
+    is_human_request = (
+        any(re.search(rf"\b{re.escape(k)}\b", lower_msg) for k in ["human", "representative", "agent", "support"]) or
+        any(phrase in lower_msg for phrase in ["talk to", "speak to", "connect me", "customer care", "call me", "bande se", "insan se", "baat karni"]) or
+        lower_msg.strip() in ["human", "talk to human", "talk to a human", "agent", "support", "call"]
+    )
+    if is_human_request:
+        if user_is_urdu:
+            human_reply = "Aap humare team member se direct WhatsApp par +92 300 1234567 par baat kar sakte hain ya neeche diye gaye button par click karein."
+        else:
+            human_reply = "I would be glad to connect you with our human team! You can chat directly with us on WhatsApp at +92 300 1234567, or click the WhatsApp button below."
+
+        audio_b64 = ""
+        if DEEPGRAM_API_KEY:
+            try:
+                url = f"https://api.deepgram.com/v1/speak?model={DEEPGRAM_TTS_VOICE}"
+                headers = {
+                    "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                body = {"text": human_reply[:180]}
+                tts_res = await voice_client.post(url, headers=headers, json=body)
+                if tts_res.status_code == 200:
+                    audio_b64 = base64.b64encode(tts_res.content).decode("utf-8")
+            except Exception as e:
+                print(f"[Human TTS Error] {e}")
+
+        return {
+            "reply": human_reply,
+            "handoff": True,
+            "sources": ["customer_support"],
+            "audio_base64": audio_b64
         }
 
     # STEP 2: RAG retrieval
