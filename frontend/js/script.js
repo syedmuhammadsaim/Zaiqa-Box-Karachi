@@ -555,6 +555,46 @@ function initEventTracking() {
 }
 
 /**
+ * Display luxury floating welcome message with user's name for exactly 2 seconds
+ */
+function showWelcomeMessage(userName, subtitle = "Signed in successfully • Enjoy your premium lunch!") {
+  const existing = document.getElementById("welcomeUserToast");
+  if (existing) existing.remove();
+
+  const container = document.createElement("div");
+  container.id = "welcomeUserToast";
+  container.className = "welcome-toast-container";
+
+  const cleanName = String(userName || "Customer").trim();
+  const firstLetter = cleanName.charAt(0).toUpperCase() || "👋";
+
+  container.innerHTML = `
+    <div class="welcome-toast" role="alert" aria-live="assertive">
+      <div class="welcome-toast-icon">${firstLetter}</div>
+      <div class="welcome-toast-content">
+        <div class="welcome-toast-title">Welcome back, <span>${cleanName}</span>! 👋</div>
+        <div class="welcome-toast-subtitle">${subtitle}</div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  // Display for exactly 2 seconds (2000ms), then smoothly fade out
+  setTimeout(() => {
+    const toast = container.querySelector(".welcome-toast");
+    if (toast) {
+      toast.classList.add("fade-out");
+      setTimeout(() => {
+        container.remove();
+      }, 400);
+    } else {
+      container.remove();
+    }
+  }, 2000);
+}
+
+/**
  * Customer User Registration, Login & Portal Management
  */
 let currentCustomer = null;
@@ -662,19 +702,33 @@ function initCustomerAuthAndPortal() {
           const adminTok = data.token || "zaiqabox-admin-token-2026";
           localStorage.setItem("zaiqabox_admin_token", adminTok);
           localStorage.setItem("zaiqa_admin_token", adminTok);
-          window.location.href = data.redirect || "admin/index.html";
+          if (authModal) authModal.classList.remove("open");
+
+          const adminName = (data.user && data.user.Username) ? data.user.Username : (email.includes("@") ? email.split("@")[0] : "Admin");
+          showWelcomeMessage(adminName, "Welcome Admin! Redirecting to Operations Portal...");
+
+          setTimeout(() => {
+            window.location.href = data.redirect || "admin/index.html";
+          }, 2000);
           return;
         }
 
-        // 2. If Customer logged in: Open their Lunch Dashboard directly
+        // 2. If Customer logged in: Show Welcome Message for 2 seconds & Open their Lunch Dashboard
         if (res.ok && data.customer) {
           currentCustomer = data.customer;
           localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
           localStorage.setItem("zaiqabox_customer_token", data.token);
           updateNavCustomerState();
           if (authModal) authModal.classList.remove("open");
-          populateDashboardUI();
-          if (dashModal) dashModal.classList.add("open");
+
+          // User-specific welcome message for 2 seconds
+          const customerName = currentCustomer.FullName || currentCustomer.name || "Valued Customer";
+          showWelcomeMessage(customerName, "Signed in successfully • Opening your Lunch Portal...");
+
+          setTimeout(() => {
+            populateDashboardUI();
+            if (dashModal) dashModal.classList.add("open");
+          }, 800);
         } else {
           alert(data.detail || "Invalid email/username or password.");
         }
@@ -701,7 +755,13 @@ function initCustomerAuthAndPortal() {
         if (res.ok && data.token) {
           localStorage.setItem("zaiqabox_admin_token", data.token);
           localStorage.setItem("zaiqa_admin_token", data.token);
-          window.location.href = "admin/index.html";
+          if (authModal) authModal.classList.remove("open");
+
+          showWelcomeMessage(username || "Admin", "Signed in as Admin • Redirecting to Operations Portal...");
+
+          setTimeout(() => {
+            window.location.href = "admin/index.html";
+          }, 2000);
         } else {
           alert(data.detail || "Invalid admin username or password.");
         }
@@ -742,8 +802,14 @@ function initCustomerAuthAndPortal() {
           localStorage.setItem("zaiqabox_customer_token", data.token);
           updateNavCustomerState();
           if (authModal) authModal.classList.remove("open");
-          populateDashboardUI();
-          if (dashModal) dashModal.classList.add("open");
+
+          const customerName = currentCustomer.FullName || name || "Customer";
+          showWelcomeMessage(customerName, "Welcome to ZaiqaBox Karachi! Your account is active.");
+
+          setTimeout(() => {
+            populateDashboardUI();
+            if (dashModal) dashModal.classList.add("open");
+          }, 800);
         } else {
           alert(data.detail || "Registration failed. Please verify your details.");
         }

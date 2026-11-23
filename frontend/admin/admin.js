@@ -20,16 +20,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Toast notification helper
-function showToast(message, type = "info") {
+function showToast(message, type = "info", duration = 3500) {
   const container = document.getElementById("toastContainer");
   if (!container) return;
   const toast = document.createElement("div");
-  toast.className = "toast";
+  toast.className = `toast ${type}`;
   toast.textContent = message;
   container.appendChild(toast);
   setTimeout(() => {
-    toast.remove();
-  }, 3500);
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(-10px)";
+    toast.style.transition = "all 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
 
 // Authentication Check & Login
@@ -70,7 +73,7 @@ function initAuth() {
           currentToken = data.token;
           localStorage.setItem("zaiqabox_admin_token", currentToken);
           showApp();
-          showToast("Welcome back! Signed in successfully.", "success");
+          showToast(`Welcome back, ${u || "Admin"}! Signed in successfully.`, "success", 2000);
         } else {
           alert(data.detail || "Invalid login credentials.");
         }
