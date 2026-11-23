@@ -12,6 +12,7 @@ const CONFIG = {
     email: "zaiqaboxkarachi@gmail.com",
     whatsappNumber: "923378034564", // Format: 923XXXXXXXXX (no + or spaces for wa.me links)
     displayWhatsapp: "+92 337 8034564",
+    googleClientId: "27570188271-pmr50sr7smtc8buqlarjfrrq9ukekvjn.apps.googleusercontent.com",
     logoPath: "assets/logo.png",
     bannerPath: "assets/banner.jpg",
     pdfPath: "assets/office_lunch_guide.pdf",

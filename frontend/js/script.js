@@ -758,7 +758,7 @@ function initCustomerAuthAndPortal() {
   const googleCustomEmailInput = document.getElementById("googleCustomEmailInput");
 
   // Real Google Identity Services (GIS) Integration
-  let realGoogleClientId = "";
+  let realGoogleClientId = (typeof CONFIG !== "undefined" && CONFIG.brand && CONFIG.brand.googleClientId) || "27570188271-pmr50sr7smtc8buqlarjfrrq9ukekvjn.apps.googleusercontent.com";
 
   function initRealGoogleIdentityServices() {
     try {
@@ -775,6 +775,33 @@ function initCustomerAuthAndPortal() {
               auto_select: false,
               cancel_on_tap_outside: true
             });
+
+            // Render Google's official native buttons
+            const signinContainer = document.getElementById("realGsiButtonSignIn");
+            const signupContainer = document.getElementById("realGsiButtonSignUp");
+            if (signinContainer) {
+              google.accounts.id.renderButton(signinContainer, {
+                theme: "outline",
+                size: "large",
+                type: "standard",
+                shape: "rectangular",
+                text: "continue_with",
+                width: 360
+              });
+              if (googleSignInBtn) googleSignInBtn.style.display = "none";
+            }
+            if (signupContainer) {
+              google.accounts.id.renderButton(signupContainer, {
+                theme: "outline",
+                size: "large",
+                type: "standard",
+                shape: "rectangular",
+                text: "signup_with",
+                width: 360
+              });
+              if (googleSignUpBtn) googleSignUpBtn.style.display = "none";
+            }
+
             try { google.accounts.id.prompt(); } catch(e) {}
           }
         }).catch(() => {});
