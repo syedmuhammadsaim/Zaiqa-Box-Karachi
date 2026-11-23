@@ -23,8 +23,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Stylesheet (Cache-Busted v7.0) -->
-  <link rel="stylesheet" href="css/style.css?v=9.0">
+  <!-- Official Google Identity Services SDK for Real Google Sign-In -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Stylesheet (Cache-Busted v10.0) -->
+  <link rel="stylesheet" href="css/style.css?v=10.0">
 
   <script>
     // Zero-lag session check: If user refreshes or has already seen intro, skip immediately!
@@ -1042,8 +1045,12 @@
           <button type="button" class="btn btn-accent btn-sm btn-block" id="googleCustomProceedBtn">Sign in with this account</button>
         </div>
       </div>
-    </div>
-  </div>
+
+      <div style="margin-top: 14px; text-align: center; border-top: 1px solid #F1F3F4; padding-top: 10px;">
+        <p style="font-size: 0.75rem; color: #5F6368; margin: 0;">
+          🔒 Google Identity Services OAuth 2.0 Enabled • Client ID can be configured in Admin Settings.
+        </p>
+      </div>
     </div>
   </div>
 
@@ -1259,10 +1266,10 @@
   <!-- Dedicated Voice Audio Output Player -->
   <audio id="voiceAudioPlayer" preload="auto" style="display: none;"></audio>
 
-  <!-- Scripts (Cache-Busted v5.0) -->
-  <script src="js/config.js?v=9.0"></script>
-  <script src="js/script.js?v=9.0"></script>
-  <script src="js/chatbot.js?v=9.0"></script>
-  <script src="js/voice.js?v=9.0"></script>
+  <!-- Scripts (Cache-Busted v10.0) -->
+  <script src="js/config.js?v=10.0"></script>
+  <script src="js/script.js?v=10.0"></script>
+  <script src="js/chatbot.js?v=10.0"></script>
+  <script src="js/voice.js?v=10.0"></script>
 </body>
 </html>

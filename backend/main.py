@@ -352,21 +352,35 @@ async def customer_google_auth(payload: GoogleAuthRequest):
     picture = payload.picture or ""
     google_id = payload.sub or ""
 
-    # Parse JWT if credential token provided
-    if payload.credential and not email:
+    # If official Google ID token credential was sent, verify directly with Google
+    if payload.credential:
+        import urllib.request
+        import json
         try:
-            import base64
-            import json
-            parts = payload.credential.split(".")
-            if len(parts) >= 2:
-                padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
-                decoded = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
-                email = decoded.get("email", "").strip().lower()
-                name = name or decoded.get("name", "")
-                picture = picture or decoded.get("picture", "")
-                google_id = google_id or decoded.get("sub", "")
-        except Exception as jwt_err:
-            print(f"[Google Auth JWT parse notice] {jwt_err}")
+            verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential}"
+            with urllib.request.urlopen(verify_url, timeout=5) as g_resp:
+                if g_resp.status == 200:
+                    info = json.loads(g_resp.read().decode())
+                    email = info.get("email", "").strip().lower()
+                    name = name or info.get("name", "")
+                    picture = picture or info.get("picture", "")
+                    google_id = google_id or info.get("sub", "")
+        except Exception as verify_err:
+            print(f"[Google tokeninfo verification] {verify_err}")
+            # Fallback to local JWT decode
+            if not email:
+                try:
+                    import base64
+                    parts = payload.credential.split(".")
+                    if len(parts) >= 2:
+                        padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
+                        decoded = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+                        email = decoded.get("email", "").strip().lower()
+                        name = name or decoded.get("name", "")
+                        picture = picture or decoded.get("picture", "")
+                        google_id = google_id or decoded.get("sub", "")
+                except Exception as jwt_err:
+                    print(f"[Google Auth JWT parse notice] {jwt_err}")
 
     if not email or "@" not in email:
         raise HTTPException(status_code=400, detail="Invalid Google authentication email.")

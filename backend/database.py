@@ -244,7 +244,8 @@ class DatabaseManager:
                 ('outside_zone_fee_per_day', '200', 'Daily outside zone surcharge'),
                 ('delivery_window', '12:30 PM – 1:30 PM', 'Drop-off time window'),
                 ('pause_deadline', '8:00 PM the night prior', 'Pause cutoff'),
-                ('compliance_note', 'For any medical or dietary questions, our human nutritionist will assist you.', 'Compliance')
+                ('compliance_note', 'For any medical or dietary questions, our human nutritionist will assist you.', 'Compliance'),
+                ('google_client_id', os.getenv('GOOGLE_CLIENT_ID', ''), 'Google OAuth 2.0 Web Client ID')
             ])
 
         conn.commit()

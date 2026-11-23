@@ -757,7 +757,85 @@ function initCustomerAuthAndPortal() {
   const googleCustomProceedBtn = document.getElementById("googleCustomProceedBtn");
   const googleCustomEmailInput = document.getElementById("googleCustomEmailInput");
 
+  // Real Google Identity Services (GIS) Integration
+  let realGoogleClientId = "";
+
+  function initRealGoogleIdentityServices() {
+    try {
+      fetch("/api/site/data")
+        .then(r => r.json())
+        .then(d => {
+          if (d.settings && d.settings.google_client_id) {
+            realGoogleClientId = d.settings.google_client_id.trim();
+          }
+          if (realGoogleClientId && window.google && window.google.accounts && window.google.accounts.id) {
+            google.accounts.id.initialize({
+              client_id: realGoogleClientId,
+              callback: onRealGoogleCredential,
+              auto_select: false,
+              cancel_on_tap_outside: true
+            });
+            try { google.accounts.id.prompt(); } catch(e) {}
+          }
+        }).catch(() => {});
+    } catch(err) {}
+  }
+
+  setTimeout(initRealGoogleIdentityServices, 1200);
+
+  async function onRealGoogleCredential(response) {
+    if (!response || !response.credential) return;
+    showToast("Verifying Google account...", "info", 2500);
+    try {
+      const res = await fetch("/api/user/google-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (googleModal) googleModal.classList.remove("open");
+        if (authModal) authModal.classList.remove("open");
+
+        if (data.role === "admin" || data.redirect) {
+          const adminTok = data.token || "zaiqabox-admin-token-2026";
+          localStorage.setItem("zaiqabox_admin_token", adminTok);
+          localStorage.setItem("zaiqa_admin_token", adminTok);
+          showWelcomeMessage(data.user ? (data.user.fullName || data.user.FullName || "Admin") : "Admin", "Welcome Admin! Redirecting...");
+          setTimeout(() => { window.location.href = "admin/index.html"; }, 1000);
+          return;
+        }
+
+        if (data.customer) {
+          currentCustomer = data.customer;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          localStorage.setItem("zaiqabox_customer_token", data.token);
+          updateNavCustomerState();
+          showWelcomeMessage(currentCustomer.FullName || "Customer", "Signed in with Google! Enjoy your meal perks.");
+          setTimeout(() => {
+            populateDashboardUI();
+            if (dashModal) dashModal.classList.add("open");
+          }, 600);
+        }
+      } else {
+        alert(data.detail || "Google authentication failed.");
+      }
+    } catch(e) {
+      alert("Error communicating with authentication server.");
+    }
+  }
+
   function openGoogleModal() {
+    if (realGoogleClientId && window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            if (googleModal) googleModal.classList.add("open");
+          }
+        });
+        return;
+      } catch (e) {}
+    }
     if (googleModal) {
       googleModal.classList.add("open");
       if (googleCustomInputWrap) googleCustomInputWrap.style.display = "none";

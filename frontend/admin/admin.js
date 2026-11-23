@@ -725,6 +725,7 @@ async function loadSettings() {
     if (document.getElementById("setOutsideFee")) document.getElementById("setOutsideFee").value = settings.outside_zone_fee_per_day || "200";
     if (document.getElementById("setPauseDeadline")) document.getElementById("setPauseDeadline").value = settings.pause_deadline || "8:00 PM the night prior";
     if (document.getElementById("setCompliance")) document.getElementById("setCompliance").value = settings.compliance_note || "For any medical or dietary questions, our human nutritionist will assist you.";
+    if (document.getElementById("setGoogleClientId")) document.getElementById("setGoogleClientId").value = settings.google_client_id || "";
   } catch (e) {
     console.error("Settings load error", e);
   }
@@ -741,7 +742,8 @@ if (saveSettingsBtn) {
         email: document.getElementById("setEmail").value.trim(),
         outside_zone_fee_per_day: document.getElementById("setOutsideFee").value.trim(),
         pause_deadline: document.getElementById("setPauseDeadline").value.trim(),
-        compliance_note: document.getElementById("setCompliance").value.trim()
+        compliance_note: document.getElementById("setCompliance").value.trim(),
+        google_client_id: document.getElementById("setGoogleClientId") ? document.getElementById("setGoogleClientId").value.trim() : ""
       }
     };
 
