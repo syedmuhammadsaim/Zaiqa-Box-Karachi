@@ -37,12 +37,12 @@ function initIntroSplash() {
     if (hasEnded) return;
     hasEnded = true;
 
-    // Trigger crack and break immediately
+    // Trigger smooth parting immediately
     splash.classList.add("cracking");
     setTimeout(() => {
       splash.classList.add("shattered");
       document.body.classList.remove("splash-loading");
-    }, 80);
+    }, 100);
 
     setTimeout(() => {
       splash.classList.add("dismissed");
@@ -51,10 +51,10 @@ function initIntroSplash() {
     setTimeout(() => {
       splash.style.display = "none";
       if (splash.parentNode) splash.parentNode.removeChild(splash);
-    }, 800);
+    }, 950);
   }
 
-  // Click anywhere or tap Skip to break immediately
+  // Click anywhere or tap Skip to dismiss smoothly
   if (skipBtn) {
     skipBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -63,31 +63,31 @@ function initIntroSplash() {
   }
   splash.addEventListener("click", shatterAndDismiss);
 
-  // Fast & Snappy Automated Timeline (1.3s total instead of 3.5s):
-  // 1. 0.0s - 0.45s: Whole logo displays with ambient glow
-  // 2. 0.5s: Electric golden crack ruptures across the logo
+  // Silky Smooth Cinematic Timeline:
+  // 1. 0.0s - 0.6s: Whole logo displays with breathing golden aura
+  // 2. 0.6s: Golden energy illuminates the logo
   setTimeout(() => {
     if (!hasEnded) splash.classList.add("cracking");
-  }, 500);
+  }, 600);
 
-  // 3. 0.85s: Full Logo breaks/shatters in two halves & curtains pull open
+  // 3. 1.1s: Logo gently parts & velvet curtains glide open smoothly
   setTimeout(() => {
     if (!hasEnded) {
       splash.classList.add("shattered");
       document.body.classList.remove("splash-loading");
     }
-  }, 850);
+  }, 1100);
 
-  // 4. 1.35s: Fully uncovers the website smoothly
+  // 4. 1.8s: Fully reveals the website with silky fade
   setTimeout(() => {
     if (!hasEnded) {
       splash.classList.add("dismissed");
       setTimeout(() => {
         splash.style.display = "none";
         if (splash.parentNode) splash.parentNode.removeChild(splash);
-      }, 500);
+      }, 600);
     }
-  }, 1350);
+  }, 1800);
 }
 
 function trackEvent(eventName, params = {}) {

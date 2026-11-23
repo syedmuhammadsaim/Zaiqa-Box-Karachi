@@ -13,6 +13,7 @@ import asyncio
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from email.utils import formataddr, formatdate, make_msgid
 from typing import Dict, Any, Tuple
 from dotenv import load_dotenv
@@ -70,8 +71,9 @@ def _send_smtp_html(to_email: str, subject: str, html_content: str, reply_to: st
         return False, note
 
     try:
-        # Create multipart/alternative for maximum deliverability and anti-spam compliance
-        msg = MIMEMultipart("alternative")
+        # Standard RFC structure for emails with embedded images:
+        # Related (outer) -> Alternative (plain + html) -> Image (inline cid)
+        msg = MIMEMultipart("related")
         msg["Subject"] = subject
         msg["From"] = formataddr(("ZaiqaBox Karachi", sender_addr))
         msg["To"] = to_email.strip()
@@ -82,6 +84,9 @@ def _send_smtp_html(to_email: str, subject: str, html_content: str, reply_to: st
         msg["Date"] = formatdate(localtime=True)
         msg["Message-ID"] = make_msgid(domain="gmail.com")
 
+        # Inner container for text and HTML parts
+        msg_alt = MIMEMultipart("alternative")
+
         # Generate clean plain text version (prevents spam filters from penalizing HTML-only emails)
         plain_text = re.sub(r'<style.*?</style>', '', html_content, flags=re.DOTALL)
         plain_text = re.sub(r'<[^>]+>', ' ', plain_text)
@@ -89,8 +94,24 @@ def _send_smtp_html(to_email: str, subject: str, html_content: str, reply_to: st
 
         part_plain = MIMEText(plain_text, "plain", "utf-8")
         part_html = MIMEText(html_content, "html", "utf-8")
-        msg.attach(part_plain)
-        msg.attach(part_html)
+        msg_alt.attach(part_plain)
+        msg_alt.attach(part_html)
+        msg.attach(msg_alt)
+
+        # Attach logo as inline image with Content-ID <zaiqabox_logo>
+        logo_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "assets", "logo_email.png")
+        if not os.path.exists(logo_path):
+            logo_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "assets", "logo.png")
+
+        if os.path.exists(logo_path):
+            try:
+                with open(logo_path, "rb") as img_f:
+                    logo_img = MIMEImage(img_f.read(), _subtype="png")
+                    logo_img.add_header("Content-ID", "<zaiqabox_logo>")
+                    logo_img.add_header("Content-Disposition", "inline", filename="zaiqabox_logo.png")
+                    msg.attach(logo_img)
+            except Exception as img_err:
+                print(f"[Email Service] Logo attach error: {img_err}")
 
         with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as server:
             server.ehlo()
@@ -133,6 +154,7 @@ def build_customer_email_html(lead_data: Dict[str, Any]) -> str:
     <body>
       <div class="email-container">
         <div class="email-header">
+          <img src="cid:zaiqabox_logo" alt="ZaiqaBox Karachi" width="150" style="display: block; max-width: 150px; height: auto; margin: 0 auto 10px auto; border: 0;" />
           <div class="header-title">🍱 ZaiqaBox Karachi</div>
           <div class="header-sub">Fresh, Home-Cooked Corporate Lunch Subscriptions</div>
         </div>
@@ -150,11 +172,9 @@ def build_customer_email_html(lead_data: Dict[str, Any]) -> str:
             </ul>
           </div>
 
-          <p>We have attached our complimentary corporate guide to help you fuel your workday with nutrition-dense, balanced meals.</p>
+          <p>We are delighted to have you on board. Our nutritionist-reviewed lunch boxes ensure clean energy and balanced meals for corporate professionals across Karachi.</p>
 
           <div style="text-align: center; margin: 25px 0;">
-            <a href="http://127.0.0.1:8000/assets/office_lunch_guide.pdf" class="btn-guide">📥 Download Nutrition Guide (PDF)</a>
-            <br><br>
             <a href="{wa_url}" class="btn-wa">💬 Confirm Delivery on WhatsApp</a>
           </div>
 
@@ -186,7 +206,11 @@ def build_admin_alert_html(lead_data: Dict[str, Any]) -> str:
     <html>
     <head><meta charset="utf-8"></head>
     <body style="font-family: Arial, sans-serif; font-size: 15px; color: #1e293b; line-height: 1.6; background-color: #ffffff; padding: 20px;">
-      <h2 style="color: #2E7D32; margin-top: 0; font-size: 20px;">New ZaiqaBox Corporate Lunch Order</h2>
+      <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0;">
+        <img src="cid:zaiqabox_logo" alt="ZaiqaBox Karachi" width="150" style="display: block; max-width: 150px; height: auto; margin: 0 auto 10px auto; border: 0;" />
+        <h2 style="color: #2E7D32; margin: 0; font-size: 20px; font-weight: bold;">New ZaiqaBox Corporate Lunch Order</h2>
+        <div style="color: #64748b; font-size: 13px; margin-top: 4px;">Automated Website Lead Dispatch</div>
+      </div>
       <p>Hello Team,</p>
       <p>A new customer has just submitted their lunch details on the ZaiqaBox Karachi website:</p>
       
