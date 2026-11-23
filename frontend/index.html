@@ -809,9 +809,8 @@
 
       <!-- Auth Tabs -->
       <div class="auth-tabs">
-        <button class="auth-tab-btn active" id="tabLoginBtn" type="button">Customer Sign In</button>
+        <button class="auth-tab-btn active" id="tabLoginBtn" type="button">Sign In</button>
         <button class="auth-tab-btn" id="tabRegisterBtn" type="button">Register Account</button>
-        <button class="auth-tab-btn" id="tabAdminBtn" type="button">Admin Sign In</button>
       </div>
 
       <!-- Guest Lead Flow Prompt Banner -->
@@ -819,10 +818,10 @@
         <span>🍱</span> Please create your account password (or sign in) to activate your subscription plan and access your lunch dashboard & guide!
       </div>
 
-      <!-- Sign In Form (Customer or Admin) -->
+      <!-- Sign In Form (Unified for Customer & Admin) -->
       <form id="customerLoginForm" class="auth-form-pane active">
         <div class="form-group">
-          <label class="form-label">Email Address or Username</label>
+          <label class="form-label">Email Address or Admin Username</label>
           <input type="text" id="loginCustEmail" class="form-input" placeholder="asad@company.com or admin" required>
         </div>
         <div class="form-group">
@@ -834,24 +833,6 @@
         </button>
         <p class="auth-switch-note">
           Don't have an account yet? <a href="#" id="switchToRegisterLink">Create one now</a>
-        </p>
-      </form>
-
-      <!-- Admin Direct Sign In Form -->
-      <form id="adminLoginForm" class="auth-form-pane" style="display: none;">
-        <div class="form-group">
-          <label class="form-label">Admin Username</label>
-          <input type="text" id="adminLoginUsername" class="form-input" placeholder="admin" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Admin Password</label>
-          <input type="password" id="adminLoginPassword" class="form-input" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn btn-accent btn-block" id="adminLoginSubmitBtn" style="margin-top: 1rem;">
-          <span>⚡</span> Enter Admin Panel
-        </button>
-        <p class="auth-switch-note" style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-          Login to manage menu dishes, pricing plans, delivery zones, leads, and orders.
         </p>
       </form>
 

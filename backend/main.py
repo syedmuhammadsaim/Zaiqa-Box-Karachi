@@ -311,7 +311,7 @@ async def customer_login(payload: CustomerLoginRequest):
         return {
             "status": "success",
             "role": "admin",
-            "redirect": "/admin",
+            "redirect": "/admin/index.html",
             "message": "Welcome Admin! Redirecting to Admin Operations Portal...",
             "token": "zaiqabox-admin-token-2026",
             "user": admin_user

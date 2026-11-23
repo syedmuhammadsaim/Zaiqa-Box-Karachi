@@ -833,9 +833,15 @@ class DatabaseManager:
 
     # --- AUTHENTICATION ---
     def verify_admin(self, username: str, password: str) -> Optional[Dict[str, Any]]:
+        clean_user = str(username or "").strip().lower()
+        admin_aliases = ["admin", "zaiqaboxkarachi@gmail.com", "admin@zaiqabox.pk", "admin@zaiqabox.com"]
+        
         conn = self.get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT Id, Username, FullName, Role, PasswordHash FROM AdminUsers WHERE Username = ?", (username,))
+        if clean_user in admin_aliases:
+            cur.execute("SELECT Id, Username, FullName, Role, PasswordHash FROM AdminUsers WHERE LOWER(Username) = 'admin' OR LOWER(Username) = ?", (clean_user,))
+        else:
+            cur.execute("SELECT Id, Username, FullName, Role, PasswordHash FROM AdminUsers WHERE LOWER(Username) = ?", (clean_user,))
         row = cur.fetchone()
         conn.close()
         if not row:

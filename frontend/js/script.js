@@ -692,18 +692,15 @@ function initCustomerAuthAndPortal() {
   // Tabs & Forms
   const tabLogin = document.getElementById("tabLoginBtn");
   const tabRegister = document.getElementById("tabRegisterBtn");
-  const tabAdmin = document.getElementById("tabAdminBtn");
   const formLogin = document.getElementById("customerLoginForm");
   const formRegister = document.getElementById("customerRegisterForm");
-  const formAdmin = document.getElementById("adminLoginForm");
   const switchReg = document.getElementById("switchToRegisterLink");
   const switchLog = document.getElementById("switchToLoginLink");
 
-  // Switch tabs between Customer Login, Register, & Admin
+  // Switch tabs between Sign In & Register
   function setAuthTab(tabName) {
     if (tabLogin) tabLogin.classList.toggle("active", tabName === "login");
     if (tabRegister) tabRegister.classList.toggle("active", tabName === "register");
-    if (tabAdmin) tabAdmin.classList.toggle("active", tabName === "admin");
 
     if (formLogin) {
       formLogin.classList.toggle("active", tabName === "login");
@@ -713,19 +710,25 @@ function initCustomerAuthAndPortal() {
       formRegister.classList.toggle("active", tabName === "register");
       formRegister.style.display = tabName === "register" ? "block" : "none";
     }
-    if (formAdmin) {
-      formAdmin.classList.toggle("active", tabName === "admin");
-      formAdmin.style.display = tabName === "admin" ? "block" : "none";
-    }
   }
 
   if (tabLogin) tabLogin.addEventListener("click", () => setAuthTab("login"));
   if (tabRegister) tabRegister.addEventListener("click", () => setAuthTab("register"));
-  if (tabAdmin) tabAdmin.addEventListener("click", () => setAuthTab("admin"));
   if (switchReg) switchReg.addEventListener("click", (e) => { e.preventDefault(); setAuthTab("register"); });
   if (switchLog) switchLog.addEventListener("click", (e) => { e.preventDefault(); setAuthTab("login"); });
 
-  // Handle Login Submit (Customer OR Admin credentials)
+  // Check URL params to auto-open login modal if redirected from admin
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("auth") === "login" || urlParams.get("auth") === "admin" || urlParams.get("login")) {
+      if (authModal) {
+        authModal.classList.add("open");
+        setAuthTab("login");
+      }
+    }
+  } catch (paramErr) {}
+
+  // Handle Login Submit (Customer OR Admin unified login)
   if (formLogin) {
     formLogin.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -747,12 +750,14 @@ function initCustomerAuthAndPortal() {
           localStorage.setItem("zaiqa_admin_token", adminTok);
           if (authModal) authModal.classList.remove("open");
 
-          const adminName = (data.user && data.user.Username) ? data.user.Username : (email.includes("@") ? email.split("@")[0] : "Admin");
+          const adminName = (data.user && (data.user.fullName || data.user.FullName || data.user.username || data.user.Username))
+            ? (data.user.fullName || data.user.FullName || data.user.username || data.user.Username)
+            : (email.includes("@") ? email.split("@")[0] : "Admin");
           showWelcomeMessage(adminName, "Welcome Admin! Redirecting to Operations Portal...");
 
           setTimeout(() => {
-            window.location.href = data.redirect || "admin/index.html";
-          }, 2000);
+            window.location.href = "admin/index.html";
+          }, 1500);
           return;
         }
 

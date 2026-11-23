@@ -7,12 +7,15 @@
   <link rel="icon" type="image/png" href="../assets/logo.png">
   <link rel="stylesheet" href="admin.css">
   <script>
-    // Prevent flash of login screen on page refresh
+    // Check authentication immediately before painting page
     (function() {
       try {
         var token = localStorage.getItem("zaiqabox_admin_token") || localStorage.getItem("zaiqa_admin_token");
         if (token) {
           document.documentElement.classList.add("admin-logged-in");
+        } else {
+          // Redirect unauthenticated visitor to unified login modal on main website
+          window.location.replace("../index.html?auth=login");
         }
       } catch (e) {}
     })();

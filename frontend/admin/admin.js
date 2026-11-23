@@ -87,8 +87,11 @@ function initAuth() {
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-      showLogin();
-      showToast("Signed out.");
+      localStorage.removeItem("zaiqabox_admin_token");
+      localStorage.removeItem("zaiqa_admin_token");
+      currentToken = "";
+      document.documentElement.classList.remove("admin-logged-in");
+      window.location.href = "../index.html";
     });
   }
 
@@ -119,11 +122,8 @@ function initAuth() {
     localStorage.removeItem("zaiqabox_admin_token");
     localStorage.removeItem("zaiqa_admin_token");
     currentToken = "";
-    if (loginWrapper) loginWrapper.style.display = "flex";
-    if (appShell) {
-      appShell.classList.remove("active");
-      appShell.style.display = "none";
-    }
+    // Redirect to unified login modal on main website
+    window.location.href = "../index.html?auth=login";
   }
 }
 
