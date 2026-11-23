@@ -3102,3 +3102,144 @@ body.splash-loading {
   cursor: not-allowed;
   background: #F1F5F9;
 }
+
+
+/* ==========================================================================
+   RECIPE MODAL & CHEF COOKING GUIDE STYLES
+   ========================================================================== */
+.user-modal-card.recipe-modal-card {
+  max-width: 680px;
+  padding: 1.75rem 2rem;
+  border-radius: 20px;
+  background: #FFFFFF;
+}
+
+.recipe-hero-wrap {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1.5px solid #F1E5D8;
+  margin-bottom: 1.25rem;
+}
+
+.recipe-hero-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+
+.recipe-meta-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.recipe-badge-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(229, 169, 60, 0.15);
+  color: var(--walnut);
+}
+
+.recipe-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--walnut);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 1.25rem 0 0.65rem;
+}
+
+.recipe-ingredients-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.5rem 1rem;
+  padding-left: 1.25rem;
+  margin: 0;
+  font-size: 0.88rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.recipe-steps-list {
+  padding-left: 1.25rem;
+  margin: 0;
+  font-size: 0.88rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.recipe-steps-list li {
+  margin-bottom: 0.65rem;
+}
+
+.recipe-tip-box {
+  background: #FFFDF9;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: #4B5563;
+  line-height: 1.5;
+}
+
+.recipe-dish-selector {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  padding-right: 36px;
+  margin-bottom: 1rem;
+}
+
+.recipe-day-tab {
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid #E5E7EB;
+  background: #F9FAFB;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.recipe-day-tab.active {
+  background: var(--walnut);
+  color: #FFFFFF;
+  border-color: var(--walnut);
+}
+
+.view-recipe-card-btn {
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1.5px solid var(--accent);
+  background: #FFFDF9;
+  color: var(--walnut);
+  padding: 0.45rem 0.75rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-recipe-card-btn:hover {
+  background: var(--accent);
+  color: var(--walnut);
+  transform: translateY(-1px);
+}

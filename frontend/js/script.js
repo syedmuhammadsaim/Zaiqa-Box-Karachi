@@ -255,6 +255,9 @@ function renderLiveMenu(menuItems) {
           <a href="${waUrl}" class="btn btn-whatsapp btn-block menu-order-dish-btn" target="_blank" rel="noopener" onclick="trackEvent('whatsapp_click', { dish: '${dish.Title}' })">
             <span>💬</span> Order ${dish.DayOfWeek}'s Lunch
           </a>
+          <button type="button" class="view-recipe-card-btn" onclick="openDishRecipeModal('${dish.DayOfWeek}')">
+            <span>👨‍🍳</span> Free Recipe &amp; Cooking Steps
+          </button>
         </div>
       </div>
     `;

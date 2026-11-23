@@ -468,12 +468,104 @@
             </div>
           </div>
 
+          <!-- CARD 5: Free Chef Recipes & Kitchen Secrets -->
+          <div class="account-card" style="background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF9 100%);">
+            <div>
+              <div class="account-card-header">
+                <h3 class="account-card-title">
+                  <span>👨‍🍳</span> Free Chef Recipes &amp; Secrets
+                </h3>
+                <span class="account-pill" style="background: #FEF3C7; color: #92400E;">Free Gift</span>
+              </div>
+
+              <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+                Want to cook ZaiqaBox healthy homestyle meals on weekends? Access our complete chef recipes, clean ingredients, and step-by-step cooking methods.
+              </p>
+
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                <span style="font-size: 0.78rem; background: #F3F4F6; padding: 3px 8px; border-radius: 6px; color: #374151;">🍗 Chicken Tikka Bowl</span>
+                <span style="font-size: 0.78rem; background: #F3F4F6; padding: 3px 8px; border-radius: 6px; color: #374151;">🥬 Daal Palak</span>
+                <span style="font-size: 0.78rem; background: #F3F4F6; padding: 3px 8px; border-radius: 6px; color: #374151;">🥘 Chicken Handi</span>
+                <span style="font-size: 0.78rem; background: #F3F4F6; padding: 3px 8px; border-radius: 6px; color: #374151;">🍚 Chana Pulao</span>
+                <span style="font-size: 0.78rem; background: #F3F4F6; padding: 3px 8px; border-radius: 6px; color: #374151;">🍛 Sindhi Biryani</span>
+              </div>
+            </div>
+
+            <div>
+              <button type="button" class="btn btn-outline btn-block" onclick="openDishRecipeModal('Monday')" style="font-weight: 700; border-color: var(--accent); color: var(--walnut);">
+                <span>📖</span> Browse &amp; Cook Free Recipes
+              </button>
+            </div>
+          </div>
+
         </div>
 
       </div>
 
     </div>
   </main>
+
+  <!-- FREE CHEF DISH RECIPE MODAL -->
+  <div class="user-modal-backdrop" id="dishRecipeModal" role="dialog" aria-modal="true" aria-label="Free Chef Recipe & Cooking Steps">
+    <div class="user-modal-card recipe-modal-card">
+      <button class="user-modal-close" onclick="closeDishRecipeModal()" aria-label="Close">&times;</button>
+      
+      <!-- Day Selector Tabs -->
+      <div class="recipe-dish-selector">
+        <button type="button" class="recipe-day-tab active" data-day="Monday" onclick="openDishRecipeModal('Monday')">Mon: Tikka Bowl</button>
+        <button type="button" class="recipe-day-tab" data-day="Tuesday" onclick="openDishRecipeModal('Tuesday')">Tue: Daal Palak</button>
+        <button type="button" class="recipe-day-tab" data-day="Wednesday" onclick="openDishRecipeModal('Wednesday')">Wed: Chicken Handi</button>
+        <button type="button" class="recipe-day-tab" data-day="Thursday" onclick="openDishRecipeModal('Thursday')">Thu: Chana Pulao</button>
+        <button type="button" class="recipe-day-tab" data-day="Friday" onclick="openDishRecipeModal('Friday')">Fri: Sindhi Biryani</button>
+      </div>
+
+      <!-- Hero Header -->
+      <div class="recipe-hero-wrap">
+        <img id="recModalImg" src="assets/menu/monday_tikka_bowl.jpg" alt="Dish Recipe" class="recipe-hero-img">
+        <div>
+          <span class="recipe-badge-pill" id="recModalDayBadge">Monday's Chef Special</span>
+          <h2 id="recModalTitle" style="margin: 4px 0 2px; font-family: var(--font-heading); font-size: 1.35rem; color: var(--walnut);">Chicken Tikka Rice Bowl</h2>
+          <div id="recModalTagline" style="font-size: 0.8rem; color: #B45309; font-weight: 700;">High-Protein • Low-Oil • Pan-Grilled Charred Flavors</div>
+          <div class="recipe-meta-badges">
+            <span class="recipe-badge-pill">⏱️ Prep: <strong id="recModalPrep">15 mins</strong></span>
+            <span class="recipe-badge-pill">🍳 Cook: <strong id="recModalCook">20 mins</strong></span>
+            <span class="recipe-badge-pill">🔥 <strong id="recModalCals">520 kcal</strong></span>
+            <span class="recipe-badge-pill">🥩 Protein: <strong id="recModalProtein">32g</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <p id="recModalDesc" style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;"></p>
+
+      <!-- Clean Ingredients -->
+      <h4 class="recipe-section-title">
+        <span>🥗</span> Clean Homestyle Ingredients
+      </h4>
+      <ul class="recipe-ingredients-list" id="recModalIngredients"></ul>
+
+      <!-- Step by Step Instructions -->
+      <h4 class="recipe-section-title">
+        <span>🍳</span> Step-by-Step Cooking Steps (Tariqa)
+      </h4>
+      <ol class="recipe-steps-list" id="recModalSteps"></ol>
+
+      <!-- Nutritionist Chef Tip -->
+      <div class="recipe-tip-box" id="recModalChefTip"></div>
+
+      <!-- Action Footer -->
+      <div style="margin-top: 1.5rem; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="window.print()" style="border-radius: 20px;">
+          <span>🖨️</span> Print / Save Recipe
+        </button>
+        <a href="#" id="recModalOrderBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener" style="border-radius: 20px;">
+          <span>🍱</span> Order Cooked Fresh by ZaiqaBox
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/recipes.js?v=1.0"></script>
 
   <!-- Footer -->
   <footer class="footer" style="background: var(--walnut); color: #FFF; padding: 2.5rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1);">
