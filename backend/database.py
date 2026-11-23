@@ -332,6 +332,14 @@ class DatabaseManager:
         cur.execute("SELECT COUNT(*) FROM DeliveryZones WHERE IsActive = 1")
         active_zones = cur.fetchone()[0]
 
+        # Fetch 6 most recent leads for Operations Overview table
+        plan_col = "[Plan]" if self.use_sql_server else "Plan"
+        if self.use_sql_server:
+            cur.execute(f"SELECT TOP 6 Id, Timestamp, Name, Email, WhatsApp, Area, {plan_col} AS [Plan], AiSummary, Status, Notes FROM Leads ORDER BY Id DESC")
+        else:
+            cur.execute(f"SELECT Id, Timestamp, Name, Email, WhatsApp, Area, {plan_col} AS [Plan], AiSummary, Status, Notes FROM Leads ORDER BY Id DESC LIMIT 6")
+        recent_leads = self.rows_to_dicts(cur, cur.fetchall())
+
         conn.close()
         return {
             "total_leads": total_leads,
@@ -339,6 +347,7 @@ class DatabaseManager:
             "active_dishes": active_dishes,
             "active_plans": active_plans,
             "active_zones": active_zones,
+            "recent_leads": recent_leads,
             "database_engine": "Microsoft SQL Server (SSMS)" if self.use_sql_server else "SQLite Local",
             "server_host": "localhost (ZaiqaBoxDB)" if self.use_sql_server else "Localfile"
         }

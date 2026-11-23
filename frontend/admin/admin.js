@@ -171,15 +171,30 @@ async function loadDashboardStats() {
     document.getElementById("statActivePlans").textContent = stats.active_plans || 0;
 
     const tbody = document.getElementById("overviewRecentLeadsTable");
-    if (tbody && stats.recent_leads) {
-      if (stats.recent_leads.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--admin-muted);">No leads captured yet.</td></tr>`;
+    if (tbody) {
+      let recent = stats.recent_leads;
+      if (!recent) {
+        // Fallback fetch if stats didn't return recent_leads directly
+        try {
+          const lRes = await fetch(`${API_BASE}/api/admin/leads`, {
+            headers: { "Authorization": `Bearer ${currentToken}` }
+          });
+          if (lRes.ok) {
+            const allLeads = await lRes.json();
+            recent = allLeads.slice(0, 6);
+          }
+        } catch (e) {}
+      }
+
+      recent = recent || [];
+      if (recent.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--admin-muted); padding: 1.5rem;">No leads captured yet.</td></tr>`;
       } else {
-        tbody.innerHTML = stats.recent_leads.map(l => `
+        tbody.innerHTML = recent.map(l => `
           <tr>
             <td>${l.Timestamp ? l.Timestamp.substring(0, 16) : '-'}</td>
             <td><strong>${l.Name}</strong></td>
-            <td>${l.WhatsApp}</td>
+            <td><a href="https://wa.me/${l.WhatsApp}" target="_blank" style="color: #25D366; font-weight: bold; text-decoration: none;">${l.WhatsApp}</a></td>
             <td>${l.Area}</td>
             <td>${l.Plan}</td>
             <td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td>
