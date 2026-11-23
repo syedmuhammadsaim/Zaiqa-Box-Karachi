@@ -147,6 +147,48 @@ class VoiceAssistant {
     trackEvent("voice_call_ended");
   }
 
+  isEndCallPhrase(text) {
+    if (!text) return false;
+    const lower = text.toLowerCase().trim();
+    const patterns = [
+      /\bend\s*(the\s*)?call\b/,
+      /\bcall\s*end\b/,
+      /\bhang\s*up\b/,
+      /\bclose\s*(the\s*)?call\b/,
+      /\bstop\s*(the\s*)?call\b/,
+      /\bdisconnect\s*(the\s*)?call\b/,
+      /\bcall\s*kat\s*(do|dein|karo)?\b/,
+      /\bcall\s*band\s*(karo|kardein|kar\s*do)?\b/,
+      /\bband\s*karo\b/,
+      /\bcall\s*khatam\b/,
+      /\bbye\s*bye\b/,
+      /\bgood\s*bye\b/
+    ];
+    return patterns.some(p => p.test(lower)) || lower === "end call" || lower === "bye" || lower === "goodbye";
+  }
+
+  handleVoiceEndCall() {
+    if (!this.isModalActive) return;
+    this.stopPlaybackOnly();
+    this.stopAll();
+
+    if (this.statusText) {
+      this.statusText.textContent = "🔴 Call Ended";
+    }
+    if (this.botCaption && this.botText) {
+      this.botText.textContent = "Call ended by voice command. Thank you for calling ZaiqaBox Karachi!";
+      this.botCaption.style.display = "block";
+    }
+    if (this.userCaption && this.userText) {
+      this.userText.textContent = '"End call"';
+      this.userCaption.style.display = "block";
+    }
+
+    setTimeout(() => {
+      this.closeModal();
+    }, 450);
+  }
+
   setModalState(state, customText) {
     if (!this.visualizer) return;
 
@@ -297,6 +339,12 @@ class VoiceAssistant {
               this.liveTranscript = tr;
               if (this.userText) this.userText.textContent = `"${tr}"`;
               if (this.userCaption) this.userCaption.style.display = "block";
+
+              // Check for voice end call command in real-time
+              if (this.isEndCallPhrase(tr)) {
+                this.handleVoiceEndCall();
+                return;
+              }
             }
           };
 
@@ -474,6 +522,12 @@ class VoiceAssistant {
       return;
     }
 
+    // Check if user spoke a command to end call
+    if (this.liveTranscript && this.isEndCallPhrase(this.liveTranscript)) {
+      this.handleVoiceEndCall();
+      return;
+    }
+
     if (this.audioChunks.length === 0) {
       // If no speech captured and call is active, resume listening automatically
       if (this.isModalActive && !this.isPlaying && !this.isRecording) {
@@ -516,6 +570,11 @@ class VoiceAssistant {
 
       const data = await response.json();
       if (!this.isModalActive) return; // User hung up!
+
+      if (data.end_call) {
+        this.handleVoiceEndCall();
+        return;
+      }
 
       const transcript = data.transcript || "";
       const reply = data.reply || "";

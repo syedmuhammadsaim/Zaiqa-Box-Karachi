@@ -939,7 +939,7 @@ async def voice_assistant(file: UploadFile = File(...), transcript_hint: Optiona
     # Transcribe audio using Deepgram if not already provided by browser
     if not transcript and DEEPGRAM_API_KEY and audio_bytes:
         try:
-            url = f"https://api.deepgram.com/v1/listen?model={DEEPGRAM_STT_MODEL}&smart_format=true&keywords=deal:2&keywords=hello:2&keywords=kya:2&keywords=lunch:2&keywords=plan:2&keywords=price:2"
+            url = f"https://api.deepgram.com/v1/listen?model={DEEPGRAM_STT_MODEL}&smart_format=true&keywords=deal:2&keywords=end call:3&keywords=call end:3&keywords=hang up:3&keywords=hello:2&keywords=kya:2&keywords=lunch:2&keywords=plan:2&keywords=price:2"
             headers = {
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
                 "Content-Type": file.content_type or "audio/webm"
@@ -952,6 +952,32 @@ async def voice_assistant(file: UploadFile = File(...), transcript_hint: Optiona
                     transcript = channels[0]["alternatives"][0].get("transcript", "").strip()
         except Exception as e:
             print(f"[Voice STT Error] {e}")
+
+    # Check if user spoke a command to end the call
+    lower_transcript = transcript.lower()
+    end_call_patterns = [
+        r"\bend\s*(the\s*)?call\b",
+        r"\bcall\s*end\b",
+        r"\bhang\s*up\b",
+        r"\bclose\s*(the\s*)?call\b",
+        r"\bstop\s*(the\s*)?call\b",
+        r"\bdisconnect\s*(the\s*)?call\b",
+        r"\bcall\s*kat\s*(do|dein|karo)?\b",
+        r"\bcall\s*band\s*(karo|kardein|kar\s*do)?\b",
+        r"\bband\s*karo\b",
+        r"\bcall\s*khatam\b",
+        r"\bgood\s*bye\b",
+        r"\bbye\s*bye\b"
+    ]
+    if any(re.search(p, lower_transcript) for p in end_call_patterns) or lower_transcript in ["end call", "hang up", "bye", "goodbye"]:
+        return {
+            "transcript": transcript,
+            "reply": "Call ended. Thank you for calling ZaiqaBox Karachi!",
+            "end_call": True,
+            "handoff": False,
+            "sources": [],
+            "audio_base64": ""
+        }
 
     if not transcript:
         transcript = "What are the lunch plans and deals for ZaiqaBox Karachi?"
