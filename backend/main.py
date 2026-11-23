@@ -713,9 +713,9 @@ async def chat_endpoint(payload: ChatRequest):
     )
     if is_human_request:
         if user_is_urdu:
-            human_reply = "Aap humare team member se direct WhatsApp par +92 300 1234567 par baat kar sakte hain ya neeche diye gaye button par click karein."
+            human_reply = "Aap humare team member se direct WhatsApp par +92 337 8034564 par baat kar sakte hain ya neeche diye gaye button par click karein."
         else:
-            human_reply = "I would be glad to connect you with our human team! You can chat directly with us on WhatsApp at +92 300 1234567, or click the WhatsApp button below."
+            human_reply = "I would be glad to connect you with our human team! You can chat directly with us on WhatsApp at +92 337 8034564, or click the WhatsApp button below."
 
         audio_b64 = ""
         if DEEPGRAM_API_KEY:
@@ -806,7 +806,7 @@ async def chat_endpoint(payload: ChatRequest):
         lower_msg = user_msg.lower()
         if user_is_urdu:
             if any(w in lower_msg for w in ["human", "insan", "banda", "baat", "call", "agent", "whatsapp"]):
-                llm_reply = "Aap humare team member se direct WhatsApp par +92 300 1234567 par baat kar sakte hain."
+                llm_reply = "Aap humare team member se direct WhatsApp par +92 337 8034564 par baat kar sakte hain."
             elif any(w in lower_msg for w in ["weekly", "hafta", "trial"]):
                 llm_reply = "ZaiqaBox ka Weekly Trial plan PKR 3,500 ka hai jisme 5 fresh lunches Clifton, DHA aur PECHS me free deliver hotay hain."
             elif any(w in lower_msg for w in ["monthly", "month", "executive", "mahina"]):
@@ -823,7 +823,7 @@ async def chat_endpoint(payload: ChatRequest):
                 llm_reply = "ZaiqaBox offers Weekly Trial (PKR 3,500 for 5 lunches) and Monthly Executive (PKR 12,500 for 20 lunches). Delivery is free in Clifton, DHA and PECHS."
         else:
             if any(w in lower_msg for w in ["human", "person", "representative", "agent", "support", "talk to", "call"]):
-                llm_reply = "I would be glad to connect you with our human team! You can chat directly with us on WhatsApp at +92 300 1234567."
+                llm_reply = "I would be glad to connect you with our human team! You can chat directly with us on WhatsApp at +92 337 8034564."
             elif any(w in lower_msg for w in ["pause", "change", "address", "skip", "tomorrow"]):
                 llm_reply = "You can easily pause your lunch subscription or update your delivery address before 8:00 PM the night prior via WhatsApp."
             elif any(w in lower_msg for w in ["weekly", "trial"]):

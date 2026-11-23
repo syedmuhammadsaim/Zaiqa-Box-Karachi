@@ -687,7 +687,7 @@ async function loadSettings() {
 
     if (document.getElementById("setBrandName")) document.getElementById("setBrandName").value = settings.brand_name || "ZaiqaBox Karachi";
     if (document.getElementById("setAnnouncement")) document.getElementById("setAnnouncement").value = settings.announcement_text || "";
-    if (document.getElementById("setWhatsapp")) document.getElementById("setWhatsapp").value = settings.whatsapp_number || "923001234567";
+    if (document.getElementById("setWhatsapp")) document.getElementById("setWhatsapp").value = settings.whatsapp_number || "923378034564";
     if (document.getElementById("setEmail")) document.getElementById("setEmail").value = settings.email || "contact@zaiqabox.pk";
     if (document.getElementById("setOutsideFee")) document.getElementById("setOutsideFee").value = settings.outside_zone_fee_per_day || "200";
     if (document.getElementById("setPauseDeadline")) document.getElementById("setPauseDeadline").value = settings.pause_deadline || "8:00 PM the night prior";

@@ -237,8 +237,8 @@ class DatabaseManager:
             # Seed Settings
             cur.executemany("INSERT INTO SiteSettings (SettingKey, SettingValue, Description) VALUES (?,?,?)", [
                 ('brand_name', 'ZaiqaBox Karachi', 'Brand business name'),
-                ('whatsapp_number', '923001234567', 'Corporate WhatsApp number'),
-                ('display_whatsapp', '+92 300 1234567', 'Formatted display phone number'),
+                ('whatsapp_number', '923378034564', 'Corporate WhatsApp number'),
+                ('display_whatsapp', '+92 337 8034564', 'Formatted display phone number'),
                 ('email', 'contact@zaiqabox.pk', 'Official customer support email'),
                 ('announcement_text', 'Order before 8:00 PM for tomorrow\'s lunch delivery | Free delivery in DHA, Clifton & PECHS (12:30 PM – 1:30 PM)', 'Announcement banner'),
                 ('outside_zone_fee_per_day', '200', 'Daily outside zone surcharge'),

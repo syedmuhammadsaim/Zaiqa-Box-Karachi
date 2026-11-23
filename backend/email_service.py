@@ -110,7 +110,7 @@ def build_customer_email_html(lead_data: Dict[str, Any]) -> str:
     name = lead_data.get("name", "Valued Professional")
     plan = lead_data.get("plan", "Weekly Trial")
     area = lead_data.get("area", "Karachi Corporate Hub")
-    wa_url = f"https://wa.me/923001234567?text=Hi%20ZaiqaBox!%20My%20name%20is%20{name}.%20I%20just%20filled%20the%20form%20for%20the%20{plan}.%20Please%20confirm%20my%20delivery%20details."
+    wa_url = f"https://wa.me/923378034564?text=Hi%20ZaiqaBox!%20My%20name%20is%20{name}.%20I%20just%20filled%20the%20form%20for%20the%20{plan}.%20Please%20confirm%20my%20delivery%20details."
 
     return f"""
     <!DOCTYPE html>
@@ -159,7 +159,7 @@ def build_customer_email_html(lead_data: Dict[str, Any]) -> str:
           </div>
 
           <p style="font-size: 14px; color: #64748B;">
-            If you have any specific dietary preferences or questions, our team is directly available on WhatsApp at <a href="https://wa.me/923001234567" style="color: #2E7D32; font-weight: bold;">+92 300 1234567</a> or reply to <a href="mailto:zaiqaboxkarachi@gmail.com">zaiqaboxkarachi@gmail.com</a>.
+            If you have any specific dietary preferences or questions, our team is directly available on WhatsApp at <a href="https://wa.me/923378034564" style="color: #2E7D32; font-weight: bold;">+92 337 8034564</a> or reply to <a href="mailto:zaiqaboxkarachi@gmail.com">zaiqaboxkarachi@gmail.com</a>.
           </p>
         </div>
         <div class="footer">

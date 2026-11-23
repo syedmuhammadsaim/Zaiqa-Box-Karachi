@@ -10,8 +10,8 @@ const CONFIG = {
     tagline: "Fresh, Home-Cooked, Portion-Controlled Office Lunches",
     city: "Karachi, Pakistan",
     email: "contact@zaiqabox.pk",
-    whatsappNumber: "923001234567", // Format: 923XXXXXXXXX (no + or spaces for wa.me links)
-    displayWhatsapp: "+92 300 1234567",
+    whatsappNumber: "923378034564", // Format: 923XXXXXXXXX (no + or spaces for wa.me links)
+    displayWhatsapp: "+92 337 8034564",
     logoPath: "assets/logo.png",
     bannerPath: "assets/banner.jpg",
     pdfPath: "assets/office_lunch_guide.pdf",

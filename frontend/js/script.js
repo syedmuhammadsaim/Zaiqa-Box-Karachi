@@ -130,7 +130,7 @@ function initNavbarAndMobileMenu() {
 }
 
 function createWhatsAppUrl(message) {
-  const phone = (CONFIG.brand && CONFIG.brand.whatsappNumber) || "923001234567";
+  const phone = (CONFIG.brand && CONFIG.brand.whatsappNumber) || "923378034564";
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
