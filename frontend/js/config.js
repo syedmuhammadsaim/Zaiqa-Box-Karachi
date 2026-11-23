@@ -9,7 +9,7 @@ const CONFIG = {
     name: "ZaiqaBox Karachi",
     tagline: "Fresh, Home-Cooked, Portion-Controlled Office Lunches",
     city: "Karachi, Pakistan",
-    email: "contact@zaiqabox.pk",
+    email: "zaiqaboxkarachi@gmail.com",
     whatsappNumber: "923378034564", // Format: 923XXXXXXXXX (no + or spaces for wa.me links)
     displayWhatsapp: "+92 337 8034564",
     logoPath: "assets/logo.png",

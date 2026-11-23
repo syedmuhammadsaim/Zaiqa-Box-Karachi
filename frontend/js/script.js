@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLeadForm();
   initEventTracking();
   initCustomerAuthAndPortal(); // Customer Registration, Login & Portal
+  initHomeCalendarShowcase(); // Interactive Meal Pause Calendar on Homepage
 });
 
 function initIntroSplash() {
@@ -1374,4 +1375,138 @@ window.handleDatePauseToggle = async function(customerId, dateStr) {
     alert("Connection error. Please try again.");
   }
 };
+
+// ==========================================
+// HOME SHOWCASE MEAL PAUSE CALENDAR LOGIC
+// ==========================================
+function initHomeCalendarShowcase() {
+  const container = document.getElementById("homeCalendarDaysGrid");
+  const statActive = document.getElementById("homeStatActive");
+  const statPaused = document.getElementById("homeStatPaused");
+  const portalCtaBtn = document.getElementById("homeCalendarPortalCtaBtn");
+  if (!container) return;
+
+  const sampleSchedule = [
+    {
+      id: "day-mon",
+      dayName: "Monday",
+      formattedDate: "Mon, Nov 24",
+      dishName: "Chicken Tikka Rice Bowl",
+      dishMeta: "High Protein • 520 kcal • Basmati & Kachumber Salad",
+      dishImage: "assets/menu/monday_tikka_bowl.jpg",
+      isPaused: false
+    },
+    {
+      id: "day-tue",
+      dayName: "Tuesday",
+      formattedDate: "Tue, Nov 25",
+      dishName: "Homestyle Daal Palak & Tawa Rotis",
+      dishMeta: "Iron & Fiber Rich • 440 kcal • Lentils & Organic Spinach",
+      dishImage: "assets/menu/tuesday_daal_palak.jpg",
+      isPaused: false
+    },
+    {
+      id: "day-wed",
+      dayName: "Wednesday",
+      formattedDate: "Wed, Nov 26",
+      dishName: "Light Desi Chicken Handi",
+      dishMeta: "Lean Poultry • 510 kcal • Whole Wheat Chapati",
+      dishImage: "assets/menu/wednesday_chicken_handi.jpg",
+      isPaused: false
+    },
+    {
+      id: "day-thu",
+      dayName: "Thursday",
+      formattedDate: "Thu, Nov 27",
+      dishName: "Spiced Chana Medley & Peas Pulao",
+      dishMeta: "Plant Powered • 460 kcal • Tangy Chana & Cooling Raita",
+      dishImage: "assets/menu/monday_tikka_bowl.jpg",
+      isPaused: false
+    },
+    {
+      id: "day-fri",
+      dayName: "Friday",
+      formattedDate: "Fri, Nov 28",
+      dishName: "Grilled Fish / Herb Cutlets Special",
+      dishMeta: "Friday Special • 490 kcal • Herbed Brown Rice",
+      dishImage: "assets/menu/wednesday_chicken_handi.jpg",
+      isPaused: false
+    }
+  ];
+
+  function renderDays() {
+    let activeCount = 0;
+    let pausedCount = 0;
+
+    container.innerHTML = sampleSchedule.map((item, idx) => {
+      if (item.isPaused) pausedCount++;
+      else activeCount++;
+
+      return `
+        <div class="cal-day-card ${item.isPaused ? 'is-paused' : ''}" style="transition: all 0.25s ease;">
+          <div class="cal-day-left">
+            <img src="${item.dishImage}" alt="${item.dishName}" class="cal-dish-img" onerror="this.src='assets/menu/monday_tikka_bowl.jpg'">
+            <div class="cal-day-info">
+              <div class="cal-day-date">
+                <span>${item.formattedDate}</span>
+                <span style="font-size: 0.72rem; color: #6B7280; font-weight: 500;">(${item.dayName})</span>
+              </div>
+              <div class="cal-dish-name">${item.dishName}</div>
+              <div class="cal-dish-meta">${item.dishMeta}</div>
+            </div>
+          </div>
+          <div class="cal-day-right">
+            <span class="cal-badge ${item.isPaused ? 'badge-paused' : 'badge-active'}">
+              ${item.isPaused ? '⏸️ Paused' : '🟢 Active'}
+            </span>
+            <button type="button" class="cal-btn ${item.isPaused ? 'cal-btn-resume' : 'cal-btn-pause'}" data-idx="${idx}" style="min-width: 90px; text-align: center;">
+              ${item.isPaused ? '▶️ Resume' : '⏸️ Pause'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    if (statActive) statActive.textContent = activeCount;
+    if (statPaused) statPaused.textContent = pausedCount;
+
+    container.querySelectorAll("button[data-idx]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-idx"), 10);
+        const day = sampleSchedule[idx];
+        day.isPaused = !day.isPaused;
+        renderDays();
+
+        if (day.isPaused) {
+          showToast(`⏸️ ${day.dayName} meal paused! 1 credit safely rolled over to your next cycle.`, "info", 3500);
+        } else {
+          showToast(`🟢 ${day.dayName} meal resumed! Fresh hot lunch will be delivered by 1:30 PM.`, "success", 3500);
+        }
+      });
+    });
+  }
+
+  renderDays();
+
+  // Handle CTA Button
+  if (portalCtaBtn) {
+    portalCtaBtn.addEventListener("click", () => {
+      if (currentCustomer && currentCustomer.FullName) {
+        const dashModal = document.getElementById("customerDashboardModal");
+        if (dashModal) {
+          populateDashboardUI();
+          dashModal.classList.add("open");
+        }
+      } else {
+        const authModal = document.getElementById("customerAuthModal");
+        if (authModal) {
+          authModal.classList.add("open");
+          const tabLogin = document.getElementById("tabLoginBtn");
+          if (tabLogin) tabLogin.click();
+        }
+      }
+    });
+  }
+}
+
 

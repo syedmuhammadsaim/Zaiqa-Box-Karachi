@@ -294,7 +294,7 @@ BEGIN
     ('brand_name', 'ZaiqaBox Karachi', 'Brand business name'),
     ('whatsapp_number', '923378034564', 'Corporate WhatsApp number (no + or spaces)'),
     ('display_whatsapp', '+92 337 8034564', 'Formatted display phone number'),
-    ('email', 'contact@zaiqabox.pk', 'Official customer support email'),
+    ('email', 'zaiqaboxkarachi@gmail.com', 'Official customer support email'),
     ('announcement_text', 'Order before 8:00 PM for tomorrow''s lunch delivery | Free delivery in DHA, Clifton & PECHS (12:30 PM – 1:30 PM)', 'Announcement banner at top of site'),
     ('outside_zone_fee_per_day', '200', 'Daily delivery surcharge for locations outside free zones'),
     ('delivery_window', '12:30 PM – 1:30 PM', 'Standard lunch drop-off time window'),
