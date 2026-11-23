@@ -637,6 +637,34 @@ function showWelcomeMessage(userName, subtitle = "Signed in successfully • Enj
   }, 2000);
 }
 
+function showToast(message, type = "info", duration = 3000) {
+  const existing = document.getElementById("genericToastNotice");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "genericToastNotice";
+  toast.style.position = "fixed";
+  toast.style.bottom = "24px";
+  toast.style.right = "24px";
+  toast.style.zIndex = "99999";
+  toast.style.background = type === "success" ? "#15803D" : type === "error" ? "#B91C1C" : "#1F2937";
+  toast.style.color = "#FFF";
+  toast.style.padding = "12px 20px";
+  toast.style.borderRadius = "8px";
+  toast.style.fontWeight = "600";
+  toast.style.fontSize = "0.9rem";
+  toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)";
+  toast.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+  toast.textContent = message;
+
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    setTimeout(() => toast.remove(), 350);
+  }, duration);
+}
+
 /**
  * Customer User Registration, Login & Portal Management
  */
@@ -651,16 +679,16 @@ function initCustomerAuthAndPortal() {
   const closeDashBtn = document.getElementById("closeDashboardModalBtn");
   const logoutBtn = document.getElementById("customerLogoutBtn");
 
-  // Check saved customer session
+  // Check saved customer session & update navbar for customer or admin
   try {
     const saved = localStorage.getItem("zaiqabox_customer_user");
     if (saved) {
       currentCustomer = JSON.parse(saved);
-      updateNavCustomerState();
     }
   } catch (e) {
     currentCustomer = null;
   }
+  updateNavCustomerState();
 
   // Open/Close Auth Modal
   if (openAuthBtn) {
@@ -694,6 +722,7 @@ function initCustomerAuthAndPortal() {
   const tabRegister = document.getElementById("tabRegisterBtn");
   const formLogin = document.getElementById("customerLoginForm");
   const formRegister = document.getElementById("customerRegisterForm");
+  const formAdmin = document.getElementById("adminLoginForm");
   const switchReg = document.getElementById("switchToRegisterLink");
   const switchLog = document.getElementById("switchToLoginLink");
 
@@ -852,6 +881,9 @@ function initCustomerAuthAndPortal() {
       const addr = document.getElementById("regAddress").value.trim();
       const pwd = document.getElementById("regPassword").value.trim();
 
+      const regSubmitBtn = document.getElementById("regSubmitBtn");
+      if (regSubmitBtn) regSubmitBtn.disabled = true;
+
       try {
         const res = await fetch("/api/user/register", {
           method: "POST",
@@ -866,46 +898,37 @@ function initCustomerAuthAndPortal() {
           })
         });
         const data = await res.json();
-        if (res.ok && data.customer) {
-          currentCustomer = data.customer;
+        if (regSubmitBtn) regSubmitBtn.disabled = false;
 
-          // If user came from filling guest lead form, sync plan and trigger lead capture
-          if (window.pendingLeadData) {
-            const pending = window.pendingLeadData;
-            window.pendingLeadData = null;
-            const banner = document.getElementById("authGuestPromptBanner");
-            if (banner) banner.style.display = "none";
+        if (res.ok) {
+          // Switch to Login Tab immediately (Do NOT go to home section)
+          setAuthTab("login");
 
-            currentCustomer.ActivePlan = pending.plan;
-            currentCustomer.Area = pending.area;
-
-            try {
-              fetch("/api/lead", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(pending)
-              });
-            } catch (leadErr) {
-              console.error("[Auto Lead Submit Error]", leadErr);
-            }
+          // Pre-fill registered email in login form
+          const loginEmailInput = document.getElementById("loginCustEmail");
+          const loginPwdInput = document.getElementById("loginCustPassword");
+          if (loginEmailInput) loginEmailInput.value = email;
+          if (loginPwdInput) {
+            loginPwdInput.value = "";
+            loginPwdInput.focus();
           }
 
-          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
-          localStorage.setItem("zaiqabox_customer_token", data.token);
-          updateNavCustomerState();
-          if (authModal) authModal.classList.remove("open");
+          // Show prominent success notice in the modal
+          const guestPrompt = document.getElementById("authGuestPromptBanner");
+          if (guestPrompt) {
+            guestPrompt.style.display = "block";
+            guestPrompt.style.background = "#DCFCE7";
+            guestPrompt.style.borderColor = "#86EFAC";
+            guestPrompt.style.color = "#15803D";
+            guestPrompt.innerHTML = `✅ <strong>Account created successfully!</strong> Please enter your password to sign in.`;
+          }
 
-          const customerName = currentCustomer.FullName || name || "Customer";
-          showWelcomeMessage(customerName, "Welcome to ZaiqaBox Karachi! Your account is active.");
-
-          setTimeout(() => {
-            populateDashboardUI();
-            if (dashModal) dashModal.classList.add("open");
-          }, 800);
+          showToast("Registration successful! Please sign in with your password.", "success", 4000);
         } else {
-          alert(data.detail || "Registration failed. Please verify your details.");
+          alert(data.detail || "Registration failed. Please check your details.");
         }
       } catch (err) {
+        if (regSubmitBtn) regSubmitBtn.disabled = false;
         alert("Network error. Please try again.");
       }
     });
@@ -1138,21 +1161,37 @@ function initCustomerAuthAndPortal() {
 function updateNavCustomerState() {
   const guestNav = document.getElementById("guestNavActions");
   const userNav = document.getElementById("userNavActions");
+  const adminNav = document.getElementById("adminNavActions");
   const navName = document.getElementById("navUserName");
   const navTag = document.getElementById("navUserPlanTag");
-  const navAdminBtn = document.getElementById("navAdminPortalBtn");
   const navAvatarImg = document.getElementById("navUserAvatarImg");
   const navAvatarDot = document.getElementById("navUserAvatarDot");
 
-  // Show Admin Portal link in header nav if admin is signed in
-  if (navAdminBtn) {
-    if (localStorage.getItem("zaiqabox_admin_token") || localStorage.getItem("zaiqa_admin_token")) {
-      navAdminBtn.style.display = "inline-flex";
-    } else {
-      navAdminBtn.style.display = "none";
+  const adminToken = localStorage.getItem("zaiqabox_admin_token") || localStorage.getItem("zaiqa_admin_token");
+
+  // 1. If Admin is Signed In:
+  if (adminToken) {
+    if (adminNav) adminNav.style.display = "flex";
+    if (guestNav) guestNav.style.display = "none";
+    if (userNav) userNav.style.display = "none";
+
+    const adminLogoutBtn = document.getElementById("navAdminLogoutBtn");
+    if (adminLogoutBtn && !adminLogoutBtn._bound) {
+      adminLogoutBtn._bound = true;
+      adminLogoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("zaiqabox_admin_token");
+        localStorage.removeItem("zaiqa_admin_token");
+        updateNavCustomerState();
+        showToast("Signed out of Admin account.", "info");
+      });
     }
+    return;
   }
 
+  // Not admin:
+  if (adminNav) adminNav.style.display = "none";
+
+  // 2. If Customer is Signed In:
   if (currentCustomer && currentCustomer.FullName) {
     if (guestNav) guestNav.style.display = "none";
     if (userNav) userNav.style.display = "flex";
@@ -1169,6 +1208,7 @@ function updateNavCustomerState() {
       if (navAvatarDot) navAvatarDot.style.display = "inline-block";
     }
   } else {
+    // 3. Guest (neither admin nor customer):
     if (guestNav) guestNav.style.display = "flex";
     if (userNav) userNav.style.display = "none";
   }

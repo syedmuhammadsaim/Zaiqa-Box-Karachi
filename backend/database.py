@@ -955,7 +955,13 @@ class DatabaseManager:
     # --- AUTHENTICATION ---
     def verify_admin(self, username: str, password: str) -> Optional[Dict[str, Any]]:
         clean_user = str(username or "").strip().lower()
-        admin_aliases = ["admin", "zaiqaboxkarachi@gmail.com", "admin@zaiqabox.pk", "admin@zaiqabox.com"]
+        admin_aliases = [
+            "admin",
+            "zaiqaboxkarachi@gmail.com",
+            "syedmuhammadsaim.contact@gmail.com",
+            "admin@zaiqabox.pk",
+            "admin@zaiqabox.com"
+        ]
         
         conn = self.get_conn()
         cur = conn.cursor()

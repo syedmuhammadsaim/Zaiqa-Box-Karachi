@@ -139,9 +139,15 @@
           </button>
         </div>
 
-        <a href="admin/index.html" class="btn btn-outline btn-sm" id="navAdminPortalBtn" style="display: none; border-color: var(--accent); color: var(--accent); font-weight: 600;" title="Open Admin Portal">
-          <span>⚙️</span> Admin Portal
-        </a>
+        <!-- Admin Signed In State -->
+        <div id="adminNavActions" style="display: none; align-items: center; gap: 0.5rem;">
+          <a href="admin/index.html" class="btn btn-sm" id="navAdminPortalBtn" style="background: var(--accent); color: var(--walnut); font-weight: 700; border-radius: 20px; padding: 6px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;" title="Open Admin Portal">
+            <span>👑</span> Admin Portal
+          </a>
+          <button type="button" class="btn btn-outline btn-sm" id="navAdminLogoutBtn" style="padding: 5px 10px; font-size: 0.78rem; border-color: rgba(255,255,255,0.35); color: #FFF;">
+            Logout
+          </button>
+        </div>
 
         <a href="#lead-capture" class="btn btn-accent btn-sm" id="navCtaBtn">Get Free Guide</a>
         <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation menu" aria-expanded="false">
