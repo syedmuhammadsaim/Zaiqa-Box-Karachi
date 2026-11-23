@@ -164,6 +164,15 @@ class CustomerAddressRequest(BaseModel):
     area: str
 
 
+class CustomerProfileUpdateRequest(BaseModel):
+    customerId: int
+    fullName: str
+    whatsapp: str
+    area: str
+    officeAddress: str
+    profileImage: Optional[str] = None
+
+
 class AdminLoginRequest(BaseModel):
     username: str
     password: str
@@ -350,6 +359,37 @@ async def customer_update_address(payload: CustomerAddressRequest):
     area = sanitize_input(payload.area)
     db.update_customer_address(payload.customerId, addr, area)
     return {"status": "success", "message": "Delivery address updated for upcoming lunches."}
+
+
+@app.post("/api/user/update-profile")
+async def customer_update_profile(payload: CustomerProfileUpdateRequest):
+    name = sanitize_input(payload.fullName)
+    whatsapp = sanitize_input(payload.whatsapp)
+    area = sanitize_input(payload.area)
+    address = sanitize_input(payload.officeAddress)
+    profile_img = payload.profileImage
+
+    if not name or len(name) < 2:
+        raise HTTPException(status_code=400, detail="Please enter a valid full name.")
+    if not validate_pakistani_phone(whatsapp):
+        raise HTTPException(status_code=400, detail="Please provide a valid Pakistani phone/WhatsApp number.")
+
+    updated_customer = db.update_customer_profile(
+        customer_id=payload.customerId,
+        full_name=name,
+        whatsapp=whatsapp,
+        area=area,
+        office_address=address,
+        profile_image=profile_img
+    )
+    if not updated_customer:
+        raise HTTPException(status_code=404, detail="Customer account not found.")
+
+    return {
+        "status": "success",
+        "message": "Profile updated successfully!",
+        "customer": updated_customer
+    }
 
 
 # ==========================================
@@ -713,7 +753,7 @@ async def chat_endpoint(payload: ChatRequest):
                 llm_reply = "ZaiqaBox ka Weekly Trial plan PKR 3,500 ka hai jisme 5 fresh lunches Clifton, DHA aur PECHS me free deliver hotay hain."
             elif any(w in lower_msg for w in ["monthly", "month", "executive", "mahina"]):
                 llm_reply = "Monthly Executive plan 20 lunches ke liye PKR 12,500 ka hai, pure mahine Monday se Friday delivery hoti hai."
-            elif any(w in lower_msg for w in ["price", "cost", "kitna", "rates", "package", "plan", "paise"]):
+            elif any(w in lower_msg for w in ["price", "cost", "kitna", "rates", "package", "plan", "paise", "deal", "deals", "offer"]):
                 llm_reply = "Humare do plans hain: Weekly Trial PKR 3,500 aur Monthly Executive PKR 12,500. Clifton, DHA aur PECHS me delivery free hai."
             elif any(w in lower_msg for w in ["kahan", "delivery", "area", "gulshan", "pechs", "clifton", "dha"]):
                 llm_reply = "DHA, Clifton aur PECHS me delivery bilkul free hai 12:30 se 1:30 PM ke darmiyan. Dusre ilaqon ke liye 200 rupay delivery charge hai."
@@ -722,7 +762,7 @@ async def chat_endpoint(payload: ChatRequest):
             elif any(w in lower_msg for w in ["menu", "khana", "salan", "dishes"]):
                 llm_reply = "Humare menu me Chicken Tikka Bowl (Mon), Daal Palak (Tue), Chicken Handi (Wed), Chana Medley (Thu), aur Grilled Fish (Fri) shamil hain."
             else:
-                llm_reply = "ZaiqaBox Karachi corporate professionals ko fresh home-cooked lunch deliver karta hai. Aap weekly ya monthly plan le saktay hain."
+                llm_reply = "ZaiqaBox offers Weekly Trial (PKR 3,500 for 5 lunches) and Monthly Executive (PKR 12,500 for 20 lunches). Delivery is free in Clifton, DHA and PECHS."
         else:
             if any(w in lower_msg for w in ["human", "person", "representative", "agent", "support", "talk to", "call"]):
                 llm_reply = "I would be glad to connect you with our human team! You can chat directly with us on WhatsApp at +92 300 1234567."
@@ -732,14 +772,14 @@ async def chat_endpoint(payload: ChatRequest):
                 llm_reply = "The Weekly Trial plan is PKR 3,500 for 5 fresh lunches (Mon-Fri) with free delivery in DHA, Clifton, and PECHS."
             elif any(w in lower_msg for w in ["monthly", "executive"]):
                 llm_reply = "The Monthly Executive plan is PKR 12,500 for 20 lunches across 4 weeks with free delivery in DHA, Clifton, and PECHS."
-            elif any(w in lower_msg for w in ["price", "cost", "rates", "plan", "package"]):
+            elif any(w in lower_msg for w in ["price", "cost", "rates", "plan", "package", "deal", "deals", "offer", "discount"]):
                 llm_reply = "ZaiqaBox offers the Weekly Trial plan (5 lunches at PKR 3,500) and Monthly Executive plan (20 lunches at PKR 12,500) with free delivery in DHA, Clifton & PECHS."
             elif any(w in lower_msg for w in ["delivery", "area", "timing", "gulshan"]):
                 llm_reply = "Delivery is 100% free across DHA, Clifton, and PECHS between 12:30 PM and 1:30 PM. Outside zones like Gulshan have a PKR 200/day delivery surcharge."
             elif any(w in lower_msg for w in ["menu", "food", "dishes", "eating"]):
                 llm_reply = "Our weekly menu rotation features: Chicken Tikka Bowl (Mon), Daal Palak (Tue), Chicken Handi (Wed), Chana Medley (Thu), and Grilled Fish (Fri)."
             else:
-                llm_reply = "ZaiqaBox Karachi delivers fresh, portion-controlled corporate lunches across Clifton, DHA, and PECHS. How can I assist you with your subscription?"
+                llm_reply = "ZaiqaBox Karachi delivers fresh, portion-controlled corporate lunches across Clifton, DHA, and PECHS. Our Weekly Trial is PKR 3,500 and Monthly Executive is PKR 12,500."
 
     # STEP 4: Post-check output guardrails
     is_violated, sanitized_reply = check_output_guardrails(llm_reply)
@@ -834,13 +874,14 @@ async def text_to_speech(payload: TTSRequest):
 
 
 @app.post("/api/voice")
-async def voice_assistant(file: UploadFile = File(...)):
+async def voice_assistant(file: UploadFile = File(...), transcript_hint: Optional[str] = Form(None)):
     audio_bytes = await file.read()
-    transcript = ""
-    if DEEPGRAM_API_KEY and audio_bytes:
+    transcript = (transcript_hint or "").strip()
+
+    # Transcribe audio using Deepgram if not already provided by browser
+    if not transcript and DEEPGRAM_API_KEY and audio_bytes:
         try:
-            # Direct English language for instant sub-300ms transcription
-            url = f"https://api.deepgram.com/v1/listen?model={DEEPGRAM_STT_MODEL}&language=en&smart_format=true"
+            url = f"https://api.deepgram.com/v1/listen?model={DEEPGRAM_STT_MODEL}&smart_format=true&keywords=deal:2&keywords=hello:2&keywords=kya:2&keywords=lunch:2&keywords=plan:2&keywords=price:2"
             headers = {
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
                 "Content-Type": file.content_type or "audio/webm"
@@ -855,7 +896,7 @@ async def voice_assistant(file: UploadFile = File(...)):
             print(f"[Voice STT Error] {e}")
 
     if not transcript:
-        transcript = "Tell me about ZaiqaBox plans and delivery."
+        transcript = "What are the lunch plans and deals for ZaiqaBox Karachi?"
 
     # Voice assistant responds strictly in English quickly
     chat_result = await chat_endpoint(ChatRequest(message=transcript, history=[], force_english=True))

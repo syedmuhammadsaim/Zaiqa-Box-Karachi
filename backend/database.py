@@ -164,9 +164,16 @@ class DatabaseManager:
             ActivePlan TEXT DEFAULT 'Weekly Trial',
             LunchesRemaining INTEGER DEFAULT 5,
             SubscriptionStatus TEXT DEFAULT 'Active',
+            ProfileImage TEXT,
             CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+
+        # Auto-migration for existing SQLite tables
+        try:
+            cur.execute("ALTER TABLE Customers ADD COLUMN ProfileImage TEXT")
+        except Exception:
+            pass
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS FAQs (
@@ -731,7 +738,7 @@ class DatabaseManager:
             cur.execute(sql, (full_name, email.lower(), password, whatsapp, area, office_address))
             
             # Fetch newly created customer
-            cur.execute("SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus FROM Customers WHERE Email = ?", (email.lower(),))
+            cur.execute("SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage FROM Customers WHERE Email = ?", (email.lower(),))
             row = cur.fetchone()
             conn.close()
             if not row:
@@ -745,7 +752,7 @@ class DatabaseManager:
     def login_customer(self, email: str, password: str) -> Optional[Dict[str, Any]]:
         conn = self.get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT Id, FullName, Email, PasswordHash, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus FROM Customers WHERE Email = ?", (email.lower(),))
+        cur.execute("SELECT Id, FullName, Email, PasswordHash, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage FROM Customers WHERE Email = ?", (email.lower(),))
         row = cur.fetchone()
         conn.close()
         if not row:
@@ -759,12 +766,40 @@ class DatabaseManager:
     def get_customer_profile(self, customer_id: int) -> Optional[Dict[str, Any]]:
         conn = self.get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, CreatedAt FROM Customers WHERE Id = ?", (customer_id,))
+        cur.execute("SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage, CreatedAt FROM Customers WHERE Id = ?", (customer_id,))
         row = cur.fetchone()
         conn.close()
         if not row:
             return None
         return dict(zip([c[0] for c in cur.description], row)) if not hasattr(row, "keys") else dict(row)
+
+    def update_customer_profile(self, customer_id: int, full_name: str, whatsapp: str, area: str, office_address: str, profile_image: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        conn = self.get_conn()
+        cur = conn.cursor()
+        try:
+            if profile_image is not None and profile_image.strip():
+                cur.execute(
+                    "UPDATE Customers SET FullName = ?, WhatsApp = ?, Area = ?, OfficeAddress = ?, ProfileImage = ? WHERE Id = ?",
+                    (full_name, whatsapp, area, office_address, profile_image, customer_id)
+                )
+            else:
+                cur.execute(
+                    "UPDATE Customers SET FullName = ?, WhatsApp = ?, Area = ?, OfficeAddress = ? WHERE Id = ?",
+                    (full_name, whatsapp, area, office_address, customer_id)
+                )
+            cur.execute(
+                "SELECT Id, FullName, Email, WhatsApp, Area, OfficeAddress, ActivePlan, LunchesRemaining, SubscriptionStatus, ProfileImage, CreatedAt FROM Customers WHERE Id = ?",
+                (customer_id,)
+            )
+            row = cur.fetchone()
+            conn.close()
+            if not row:
+                return None
+            return dict(zip([c[0] for c in cur.description], row)) if not hasattr(row, "keys") else dict(row)
+        except Exception as e:
+            print(f"[DB Error] update_customer_profile: {e}")
+            conn.close()
+            return None
 
     def pause_customer_subscription(self, customer_id: int) -> bool:
         conn = self.get_conn()

@@ -981,6 +981,153 @@ function initCustomerAuthAndPortal() {
       }
     });
   }
+
+  // Handle Profile Avatar Image Upload & Compression
+  const avatarInput = document.getElementById("dashAvatarInput");
+  if (avatarInput) {
+    avatarInput.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file || !currentCustomer) return;
+
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const img = new Image();
+        img.onload = async () => {
+          const canvas = document.createElement("canvas");
+          const MAX_SIZE = 250;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height = Math.round((height * MAX_SIZE) / width);
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width = Math.round((width * MAX_SIZE) / height);
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+
+          currentCustomer.ProfileImage = dataUrl;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          populateDashboardUI();
+          updateNavCustomerState();
+
+          try {
+            const res = await fetch("/api/user/update-profile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                customerId: currentCustomer.Id,
+                fullName: currentCustomer.FullName || "",
+                whatsapp: currentCustomer.WhatsApp || "",
+                area: currentCustomer.Area || "DHA",
+                officeAddress: currentCustomer.OfficeAddress || "",
+                profileImage: dataUrl
+              })
+            });
+            const data = await res.json();
+            if (res.ok && data.customer) {
+              currentCustomer = data.customer;
+              localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+            }
+            showWelcomeMessage(currentCustomer.FullName, "Profile photo updated successfully! 📷");
+          } catch (err) {
+            console.error("[Avatar Upload Error]", err);
+          }
+        };
+        img.src = readerEvent.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Handle Edit Profile Collapsible Form
+  const openEditBtn = document.getElementById("openEditProfileBtn");
+  const closeEditBtn = document.getElementById("closeEditProfilePanelBtn");
+  const cancelEditBtn = document.getElementById("cancelEditProfileBtn");
+  const editPanel = document.getElementById("dashEditProfilePanel");
+  const editForm = document.getElementById("customerEditProfileForm");
+
+  function toggleEditProfile(show) {
+    if (!editPanel) return;
+    if (show && currentCustomer) {
+      const editName = document.getElementById("editFullName");
+      const editWa = document.getElementById("editWhatsapp");
+      const editArea = document.getElementById("editArea");
+      const editAddr = document.getElementById("editOfficeAddress");
+      if (editName) editName.value = currentCustomer.FullName || "";
+      if (editWa) editWa.value = currentCustomer.WhatsApp || "";
+      if (editArea) editArea.value = currentCustomer.Area || "DHA";
+      if (editAddr) editAddr.value = currentCustomer.OfficeAddress || "";
+      editPanel.style.display = "block";
+    } else {
+      editPanel.style.display = "none";
+    }
+  }
+
+  if (openEditBtn) openEditBtn.addEventListener("click", () => toggleEditProfile(true));
+  if (closeEditBtn) closeEditBtn.addEventListener("click", () => toggleEditProfile(false));
+  if (cancelEditBtn) cancelEditBtn.addEventListener("click", () => toggleEditProfile(false));
+
+  if (editForm) {
+    editForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentCustomer) return;
+
+      const saveBtn = document.getElementById("saveProfileBtn");
+      const btnText = document.getElementById("saveProfileBtnText");
+      const btnSpinner = document.getElementById("saveProfileBtnSpinner");
+      if (saveBtn) saveBtn.disabled = true;
+      if (btnText) btnText.style.display = "none";
+      if (btnSpinner) btnSpinner.style.display = "inline";
+
+      const fullName = document.getElementById("editFullName").value.trim();
+      const whatsapp = document.getElementById("editWhatsapp").value.trim();
+      const area = document.getElementById("editArea").value;
+      const officeAddress = document.getElementById("editOfficeAddress").value.trim();
+
+      try {
+        const res = await fetch("/api/user/update-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId: currentCustomer.Id,
+            fullName: fullName,
+            whatsapp: whatsapp,
+            area: area,
+            officeAddress: officeAddress,
+            profileImage: currentCustomer.ProfileImage || null
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.customer) {
+          currentCustomer = data.customer;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+          populateDashboardUI();
+          updateNavCustomerState();
+          toggleEditProfile(false);
+          showWelcomeMessage(currentCustomer.FullName, "Profile details saved successfully! ✅");
+        } else {
+          alert(data.detail || "Could not update profile.");
+        }
+      } catch (err) {
+        alert("Network error updating profile.");
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+        if (btnText) btnText.style.display = "inline";
+        if (btnSpinner) btnSpinner.style.display = "none";
+      }
+    });
+  }
 }
 
 function updateNavCustomerState() {
@@ -989,6 +1136,8 @@ function updateNavCustomerState() {
   const navName = document.getElementById("navUserName");
   const navTag = document.getElementById("navUserPlanTag");
   const navAdminBtn = document.getElementById("navAdminPortalBtn");
+  const navAvatarImg = document.getElementById("navUserAvatarImg");
+  const navAvatarDot = document.getElementById("navUserAvatarDot");
 
   // Show Admin Portal link in header nav if admin is signed in
   if (navAdminBtn) {
@@ -1004,6 +1153,16 @@ function updateNavCustomerState() {
     if (userNav) userNav.style.display = "flex";
     if (navName) navName.textContent = currentCustomer.FullName.split(" ")[0];
     if (navTag) navTag.textContent = currentCustomer.SubscriptionStatus || "Active";
+
+    // Show custom profile image if uploaded
+    if (currentCustomer.ProfileImage && navAvatarImg) {
+      navAvatarImg.src = currentCustomer.ProfileImage;
+      navAvatarImg.style.display = "inline-block";
+      if (navAvatarDot) navAvatarDot.style.display = "none";
+    } else if (navAvatarImg) {
+      navAvatarImg.style.display = "none";
+      if (navAvatarDot) navAvatarDot.style.display = "inline-block";
+    }
   } else {
     if (guestNav) guestNav.style.display = "flex";
     if (userNav) userNav.style.display = "none";
@@ -1022,10 +1181,26 @@ function populateDashboardUI() {
   const pauseBtn = document.getElementById("dashTogglePauseBtn");
   const waSupportBtn = document.getElementById("dashWhatsappSupportBtn");
   const dashDownloadPdfBtn = document.getElementById("dashDownloadPdfBtn");
+  const avatarImg = document.getElementById("dashAvatarImg");
+  const avatarCircle = document.getElementById("dashAvatarCircle");
 
   if (nameEl) nameEl.textContent = currentCustomer.FullName;
   if (emailEl) emailEl.textContent = currentCustomer.Email;
   if (planEl) planEl.textContent = currentCustomer.ActivePlan || "Weekly Trial";
+
+  // Update Profile Picture or Fallback Initial
+  if (currentCustomer.ProfileImage && avatarImg) {
+    avatarImg.src = currentCustomer.ProfileImage;
+    avatarImg.style.display = "block";
+    if (avatarCircle) avatarCircle.style.display = "none";
+  } else {
+    if (avatarImg) avatarImg.style.display = "none";
+    if (avatarCircle) {
+      avatarCircle.style.display = "flex";
+      const initial = (currentCustomer.FullName || "C").charAt(0).toUpperCase();
+      avatarCircle.textContent = initial;
+    }
+  }
 
   // Link PDF download button directly to nutrition guide asset
   if (dashDownloadPdfBtn) {

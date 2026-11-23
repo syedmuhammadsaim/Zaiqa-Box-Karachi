@@ -131,8 +131,9 @@
         </div>
 
         <div id="userNavActions" style="display: none; align-items: center; gap: 0.5rem;">
-          <button class="user-pill-btn" id="openDashboardBtn">
-            <span class="user-avatar-dot"></span>
+          <button class="user-pill-btn" id="openDashboardBtn" style="display: flex; align-items: center; gap: 8px;">
+            <img id="navUserAvatarImg" src="" alt="Profile" style="display: none; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent);">
+            <span class="user-avatar-dot" id="navUserAvatarDot"></span>
             <span id="navUserName">Customer</span>
             <span class="user-plan-tag" id="navUserPlanTag">Active</span>
           </button>
@@ -899,15 +900,67 @@
   <div class="user-modal-backdrop" id="customerDashboardModal" role="dialog" aria-modal="true" aria-label="Customer Lunch Dashboard">
     <div class="user-modal-card dashboard-card">
       <button class="user-modal-close" id="closeDashboardModalBtn">&times;</button>
-      <div class="dash-modal-header">
-        <div class="dash-user-welcome">
-          <span class="dash-avatar-circle">👤</span>
+      <div class="dash-modal-header" style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.08); margin-bottom: 1rem;">
+        <div class="dash-user-welcome" style="display: flex; gap: 12px; align-items: center;">
+          <div class="dash-avatar-wrapper" style="position: relative; display: inline-block;">
+            <img id="dashAvatarImg" class="dash-avatar-img" src="" alt="Profile" style="display: none; width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <span class="dash-avatar-circle" id="dashAvatarCircle" style="width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; background: rgba(229, 169, 60, 0.18); color: var(--walnut); border: 2px solid var(--accent); font-weight: 700;">👤</span>
+            <label for="dashAvatarInput" class="dash-avatar-edit-badge" title="Upload / Change Profile Picture" style="position: absolute; bottom: -2px; right: -2px; background: var(--accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.25);">📷</label>
+            <input type="file" id="dashAvatarInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+          </div>
           <div>
-            <h3 class="dash-user-name" id="dashCustomerName">Asad Khan</h3>
-            <span class="dash-user-email" id="dashCustomerEmail">asad@company.com</span>
+            <h3 class="dash-user-name" id="dashCustomerName" style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--walnut);">Customer</h3>
+            <span class="dash-user-email" id="dashCustomerEmail" style="font-size: 0.85rem; color: var(--text-muted);">customer@email.com</span>
+            <div style="margin-top: 5px;">
+              <button type="button" class="btn btn-outline btn-sm" id="openEditProfileBtn" style="padding: 3px 10px; font-size: 0.76rem; border-radius: 14px; font-weight: 600;">
+                <span>✏️</span> Edit Profile
+              </button>
+            </div>
           </div>
         </div>
         <button class="btn btn-outline-danger btn-sm" id="customerLogoutBtn">Logout</button>
+      </div>
+
+      <!-- EDIT PROFILE COLLAPSIBLE PANEL -->
+      <div class="dash-action-card" id="dashEditProfilePanel" style="display: none; background: #FFFDF9; border: 1.5px solid rgba(229, 169, 60, 0.55); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div style="color: var(--walnut); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <span>✏️</span> Edit Your Profile Information
+          </div>
+          <button type="button" id="closeEditProfilePanelBtn" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--walnut); padding: 0 6px;">&times;</button>
+        </div>
+        <form id="customerEditProfileForm">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <label class="form-label" style="font-size: 0.82rem; margin-bottom: 4px;">Full Name *</label>
+              <input type="text" id="editFullName" class="form-input" required placeholder="Your full name">
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <label class="form-label" style="font-size: 0.82rem; margin-bottom: 4px;">WhatsApp Number *</label>
+              <input type="tel" id="editWhatsapp" class="form-input" required placeholder="03001234567">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.5rem;">
+            <label class="form-label" style="font-size: 0.82rem; margin-bottom: 4px;">Office Area *</label>
+            <select id="editArea" class="form-select">
+              <option value="DHA">DHA (Defence Phases 1 - 8)</option>
+              <option value="Clifton">Clifton (All Blocks)</option>
+              <option value="PECHS">PECHS (Blocks 1 - 6)</option>
+              <option value="Other">Other Karachi Corporate Area</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label class="form-label" style="font-size: 0.82rem; margin-bottom: 4px;">Delivery Office Address / Desk</label>
+            <input type="text" id="editOfficeAddress" class="form-input" placeholder="e.g. 4th Floor, Emerald Tower, Clifton">
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+            <button type="button" class="btn btn-outline btn-sm" id="cancelEditProfileBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" id="saveProfileBtn">
+              <span id="saveProfileBtnText">💾 Save Changes</span>
+              <span id="saveProfileBtnSpinner" style="display: none;">⏳ Saving...</span>
+            </button>
+          </div>
+        </form>
       </div>
 
       <!-- Subscription Status Card -->

@@ -6,12 +6,14 @@ Sends automated branded HTML emails to:
 """
 
 import os
+import re
 import smtplib
 import json
 import asyncio
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from typing import Dict, Any, Tuple
 from dotenv import load_dotenv
 
@@ -59,26 +61,43 @@ def _log_email_to_file(to_email: str, subject: str, email_type: str, lead_data: 
         print(f"[Email Log Error] {e}")
 
 
-def _send_smtp_html(to_email: str, subject: str, html_content: str) -> Tuple[bool, str]:
+def _send_smtp_html(to_email: str, subject: str, html_content: str, reply_to: str = "") -> Tuple[bool, str]:
     cfg = get_smtp_config()
-    if not cfg["user"] or not cfg["password"]:
-        note = "SMTP_PASSWORD not set in .env. Logged to sent_emails_log.json. To send live to inboxes, add 16-character Google App Password in .env"
+    sender_addr = (cfg["from_email"] or cfg["user"] or "").strip()
+    if not sender_addr or not cfg["password"]:
+        note = "SMTP_PASSWORD not set in .env. Logged to sent_emails_log.json."
         print(f"[Email Notice] {note}")
         return False, note
 
     try:
+        # Create multipart/alternative for maximum deliverability and anti-spam compliance
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"ZaiqaBox Karachi <{cfg['from_email'] or cfg['user']}>"
-        msg["To"] = to_email
+        msg["From"] = formataddr(("ZaiqaBox Karachi", sender_addr))
+        msg["To"] = to_email.strip()
+        if reply_to:
+            msg["Reply-To"] = reply_to.strip()
+        msg["X-Priority"] = "1"
+        msg["X-MSMail-Priority"] = "High"
+        msg["Importance"] = "High"
 
-        part = MIMEText(html_content, "html")
-        msg.attach(part)
+        # Generate plain text version (prevents Gmail spam filter from flagging HTML-only email)
+        plain_text = re.sub(r'<style.*?</style>', '', html_content, flags=re.DOTALL)
+        plain_text = re.sub(r'<[^>]+>', ' ', plain_text)
+        plain_text = re.sub(r'\s+', ' ', plain_text).strip()
 
-        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=12) as server:
+        part_plain = MIMEText(plain_text, "plain", "utf-8")
+        part_html = MIMEText(html_content, "html", "utf-8")
+        msg.attach(part_plain)
+        msg.attach(part_html)
+
+        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as server:
+            server.ehlo()
             server.starttls()
+            server.ehlo()
             server.login(cfg["user"], cfg["password"])
-            server.sendmail(msg["From"], [to_email], msg.as_string())
+            # In SMTP standard, sender envelope must be bare email address
+            server.sendmail(sender_addr, [to_email.strip()], msg.as_string())
         return True, "Delivered successfully via SMTP"
     except Exception as e:
         err_msg = str(e)
@@ -176,17 +195,16 @@ def build_admin_alert_html(lead_data: Dict[str, Any]) -> str:
         td {{ padding: 10px 12px; border-bottom: 1px solid #334155; }}
         td.label {{ font-weight: bold; width: 35%; color: #94A3B8; }}
         td.val {{ color: #F8FAFC; }}
-        .btn {{ display: inline-block; background: #25D366; color: #FFFFFF; font-weight: bold; text-decoration: none; padding: 12px 20px; border-radius: 6px; margin-right: 10px; }}
-        .btn-portal {{ display: inline-block; background: #3B82F6; color: #FFFFFF; font-weight: bold; text-decoration: none; padding: 12px 20px; border-radius: 6px; }}
+        .btn {{ display: inline-block; background: #25D366; color: #FFFFFF; font-weight: bold; text-decoration: none; padding: 12px 20px; border-radius: 6px; }}
       </style>
     </head>
     <body>
       <div class="card">
         <div class="card-header">
-          ⚡ New ZaiqaBox Corporate Lead Received!
+          New ZaiqaBox Corporate Lead Received
         </div>
         <div class="card-body">
-          <p style="color: #F8FAFC; font-size: 15px;">A new corporate client has submitted the website order form:</p>
+          <p style="color: #F8FAFC; font-size: 15px;">A new corporate client has submitted an inquiry / plan order on ZaiqaBox Karachi:</p>
           <table>
             <tr><td class="label">Customer Name:</td><td class="val"><strong>{name}</strong></td></tr>
             <tr><td class="label">Email Address:</td><td class="val"><a href="mailto:{email}" style="color: #38BDF8;">{email}</a></td></tr>
@@ -199,8 +217,10 @@ def build_admin_alert_html(lead_data: Dict[str, Any]) -> str:
 
           <div style="margin-top: 24px; text-align: center;">
             <a href="{wa_direct}" class="btn">💬 Chat Customer on WhatsApp</a>
-            <a href="http://127.0.0.1:8000/admin/" class="btn-portal">⚙️ Open Admin Portal</a>
           </div>
+          <p style="font-size: 12px; color: #94A3B8; text-align: center; margin-top: 15px;">
+            Reply to this email directly to contact {email}.
+          </p>
         </div>
       </div>
     </body>
@@ -218,7 +238,8 @@ async def send_dual_lead_emails(lead_data: Dict[str, Any]) -> Dict[str, Any]:
     admin_recipient = cfg["admin_email"] or "zaiqaboxkarachi@gmail.com"
 
     customer_subject = f"🍱 Welcome to ZaiqaBox Karachi - Your Corporate Lunch Guide & {lead_data.get('plan', 'Plan')} Details"
-    admin_subject = f"⚡ New Corporate Lead: {lead_data.get('name', 'Client')} ({lead_data.get('area', 'Karachi')} - {lead_data.get('plan', 'Plan')})"
+    # Professional, anti-spam optimized subject for admin
+    admin_subject = f"[ZaiqaBox Lead] New Corporate Lunch Inquiry - {lead_data.get('name', 'Client')} ({lead_data.get('area', 'Karachi')} | {lead_data.get('plan', 'Plan')})"
 
     customer_html = build_customer_email_html(lead_data)
     admin_html = build_admin_alert_html(lead_data)
@@ -226,12 +247,13 @@ async def send_dual_lead_emails(lead_data: Dict[str, Any]) -> Dict[str, Any]:
     async def _send_cust():
         if not customer_email:
             return False, "No customer email provided"
-        sent, status_msg = await asyncio.to_thread(_send_smtp_html, customer_email, customer_subject, customer_html)
+        sent, status_msg = await asyncio.to_thread(_send_smtp_html, customer_email, customer_subject, customer_html, "")
         _log_email_to_file(customer_email, customer_subject, "customer_confirmation", lead_data, sent, status_msg)
         return sent, status_msg
 
     async def _send_adm():
-        sent, status_msg = await asyncio.to_thread(_send_smtp_html, admin_recipient, admin_subject, admin_html)
+        # Set reply-to to customer email so admin can reply directly!
+        sent, status_msg = await asyncio.to_thread(_send_smtp_html, admin_recipient, admin_subject, admin_html, customer_email or "")
         _log_email_to_file(admin_recipient, admin_subject, "admin_alert", lead_data, sent, status_msg)
         return sent, status_msg
 

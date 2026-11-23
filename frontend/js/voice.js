@@ -253,24 +253,63 @@ class VoiceAssistant {
         this.processRecordedAudio(mimeType);
       };
 
-      // Voice Activity Detection (Auto silence detector: 2s threshold)
+      // Voice Activity Detection (Auto silence detector)
       try {
-        if (!this.audioContext) {
+        if (!this.audioContext || this.audioContext.state === "closed") {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          if (AudioContextClass) {
-            this.audioContext = new AudioContextClass();
-            const source = this.audioContext.createMediaStreamSource(this.audioStream);
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 512;
-            source.connect(this.analyser);
+          if (AudioContextClass) this.audioContext = new AudioContextClass();
+        }
+        if (this.audioContext) {
+          if (this.audioContext.state === "suspended") {
+            await this.audioContext.resume();
           }
+          const source = this.audioContext.createMediaStreamSource(this.audioStream);
+          this.analyser = this.audioContext.createAnalyser();
+          this.analyser.fftSize = 512;
+          source.connect(this.analyser);
         }
-        if (this.audioContext && this.audioContext.state === "suspended") {
-          await this.audioContext.resume();
-        }
-        this.detectSilence();
       } catch (vadErr) {
         console.warn("[VAD Init Warning]", vadErr);
+      }
+
+      // Start silence detector and speech listener
+      this.detectSilence();
+
+      // Real-time browser speech recognition for instant transcript
+      this.liveTranscript = "";
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          if (this.speechRec) {
+            try { this.speechRec.abort(); } catch (e) {}
+          }
+          this.speechRec = new SpeechRecognition();
+          this.speechRec.continuous = false;
+          this.speechRec.interimResults = true;
+          this.speechRec.lang = "en-US";
+
+          this.speechRec.onresult = (evt) => {
+            let tr = "";
+            for (let i = evt.resultIndex; i < evt.results.length; ++i) {
+              tr += evt.results[i][0].transcript;
+            }
+            if (tr) {
+              this.liveTranscript = tr;
+              if (this.userText) this.userText.textContent = `"${tr}"`;
+              if (this.userCaption) this.userCaption.style.display = "block";
+            }
+          };
+
+          this.speechRec.onend = () => {
+            if (this.isRecording && this.liveTranscript) {
+              setTimeout(() => {
+                if (this.isRecording) this.stopRecording();
+              }, 400);
+            }
+          };
+
+          this.speechRec.start();
+        } catch (srErr) {}
       }
 
       this.mediaRecorder.start(250);
@@ -292,15 +331,30 @@ class VoiceAssistant {
   }
 
   detectSilence() {
-    if (!this.analyser) return;
-    const buffer = new Uint8Array(this.analyser.frequencyBinCount);
     let silenceStart = null;
     let spokenDetected = false;
     const recordStartTime = Date.now();
 
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+
+    // Safeguard timeout: auto-stop after 4.5 seconds to guarantee prompt answers
+    this.silenceTimer = setTimeout(() => {
+      if (this.isRecording) {
+        if (this.avatarCircle) this.avatarCircle.style.transform = "scale(1)";
+        this.stopRecording();
+      }
+    }, 4500);
+
+    if (!this.analyser) return;
+
+    const buffer = new Uint8Array(this.analyser.frequencyBinCount);
 
     const checkAudio = () => {
       if (!this.isRecording || !this.analyser) return;
@@ -311,15 +365,15 @@ class VoiceAssistant {
       const avg = sum / buffer.length;
 
       // Pulse avatar circle subtly with speech volume
-      if (this.avatarCircle && avg > 2.5) {
+      if (this.avatarCircle && avg > 2) {
         const scale = Math.min(1.25, 1.0 + (avg / 90));
         this.avatarCircle.style.transform = `scale(${scale})`;
       } else if (this.avatarCircle && !this.isPlaying) {
         this.avatarCircle.style.transform = "scale(1)";
       }
 
-      // High sensitivity threshold: avg > 2.5 detects soft speech, whispering, and distant laptop microphones
-      if (avg > 2.5) {
+      // High sensitivity threshold: avg > 2 detects soft speech, whispering, and distant laptop microphones
+      if (avg > 2) {
         spokenDetected = true;
         silenceStart = null;
         if (this.statusText && this.statusText.textContent !== "🗣️ Hearing you speak...") {
@@ -328,19 +382,12 @@ class VoiceAssistant {
       } else if (spokenDetected) {
         if (!silenceStart) {
           silenceStart = Date.now();
-        } else if (Date.now() - silenceStart > 750) {
-          // Exactly ~750ms after user pauses: Answer immediately without delay!
+        } else if (Date.now() - silenceStart > 700) {
+          // Exactly ~700ms after user pauses: Answer immediately!
           if (this.avatarCircle) this.avatarCircle.style.transform = "scale(1)";
           this.stopRecording();
           return;
         }
-      }
-
-      // Safeguard: auto-stop after 5.5 seconds of recording to ensure user receives prompt answer even with very quiet mic
-      if (Date.now() - recordStartTime > 5500) {
-        if (this.avatarCircle) this.avatarCircle.style.transform = "scale(1)";
-        this.stopRecording();
-        return;
       }
 
       this.animationFrameId = requestAnimationFrame(checkAudio);
@@ -442,6 +489,9 @@ class VoiceAssistant {
     const audioBlob = new Blob(this.audioChunks, { type: mimeType || "audio/webm" });
     const formData = new FormData();
     formData.append("file", audioBlob, "recording.webm");
+    if (this.liveTranscript) {
+      formData.append("transcript_hint", this.liveTranscript);
+    }
 
     if (this.currentFetchController) {
       try { this.currentFetchController.abort(); } catch (e) {}
@@ -555,7 +605,9 @@ class VoiceAssistant {
         player = new Audio();
       }
       this.currentAudio = player;
+      try { player.pause(); } catch (e) {}
       player.src = blobUrl;
+      try { player.load(); } catch (e) {}
       player.volume = 1.0;
       player.muted = false;
 
