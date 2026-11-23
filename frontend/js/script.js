@@ -472,10 +472,6 @@ function initLeadForm() {
 
     if (hasError) return;
 
-    submitBtn.disabled = true;
-    btnText.style.display = "none";
-    btnSpinner.style.display = "inline";
-
     const payload = {
       name: nameInput.value.trim(),
       email: emailInput.value.trim(),
@@ -484,6 +480,36 @@ function initLeadForm() {
       plan: planSelect.value,
       consent: true
     };
+
+    // If user is a Guest (not registered / logged in), prompt to activate account
+    if (!currentCustomer) {
+      window.pendingLeadData = payload;
+
+      // Pre-fill registration fields with entered data
+      const regName = document.getElementById("regFullName");
+      const regEmail = document.getElementById("regEmail");
+      const regWa = document.getElementById("regWhatsapp");
+      const regArea = document.getElementById("regArea");
+      if (regName) regName.value = payload.name;
+      if (regEmail) regEmail.value = payload.email;
+      if (regWa) regWa.value = payload.whatsapp;
+      if (regArea) regArea.value = payload.area;
+
+      // Show guest prompt banner
+      const banner = document.getElementById("authGuestPromptBanner");
+      if (banner) banner.style.display = "block";
+
+      // Open Auth modal directly on Register tab
+      const tabRegisterBtn = document.getElementById("tabRegisterBtn");
+      if (tabRegisterBtn) tabRegisterBtn.click();
+      const authModal = document.getElementById("userAuthModal");
+      if (authModal) authModal.classList.add("open");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    btnText.style.display = "none";
+    btnSpinner.style.display = "inline";
 
     try {
       const response = await fetch("/api/lead", {
@@ -499,6 +525,11 @@ function initLeadForm() {
           area: payload.area,
           plan: payload.plan
         });
+
+        if (currentCustomer) {
+          currentCustomer.ActivePlan = payload.plan;
+          localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
+        }
 
         form.style.display = "none";
         successState.style.display = "block";
@@ -529,6 +560,18 @@ function initLeadForm() {
       btnSpinner.style.display = "none";
     }
   });
+
+  // Wire "Back to Form" button on success card
+  const backToFormBtn = document.getElementById("leadBackToFormBtn");
+  if (backToFormBtn) {
+    backToFormBtn.addEventListener("click", () => {
+      successState.style.display = "none";
+      form.style.display = "block";
+      submitBtn.disabled = false;
+      btnText.style.display = "inline";
+      btnSpinner.style.display = "none";
+    });
+  }
 }
 
 function triggerPdfDownload(url) {
@@ -716,6 +759,28 @@ function initCustomerAuthAndPortal() {
         // 2. If Customer logged in: Show Welcome Message for 2 seconds & Open their Lunch Dashboard
         if (res.ok && data.customer) {
           currentCustomer = data.customer;
+
+          // If user came from filling guest lead form, sync plan and trigger lead capture
+          if (window.pendingLeadData) {
+            const pending = window.pendingLeadData;
+            window.pendingLeadData = null;
+            const banner = document.getElementById("authGuestPromptBanner");
+            if (banner) banner.style.display = "none";
+
+            currentCustomer.ActivePlan = pending.plan;
+            currentCustomer.Area = pending.area;
+
+            try {
+              fetch("/api/lead", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(pending)
+              });
+            } catch (leadErr) {
+              console.error("[Auto Lead Submit Error]", leadErr);
+            }
+          }
+
           localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
           localStorage.setItem("zaiqabox_customer_token", data.token);
           updateNavCustomerState();
@@ -798,6 +863,28 @@ function initCustomerAuthAndPortal() {
         const data = await res.json();
         if (res.ok && data.customer) {
           currentCustomer = data.customer;
+
+          // If user came from filling guest lead form, sync plan and trigger lead capture
+          if (window.pendingLeadData) {
+            const pending = window.pendingLeadData;
+            window.pendingLeadData = null;
+            const banner = document.getElementById("authGuestPromptBanner");
+            if (banner) banner.style.display = "none";
+
+            currentCustomer.ActivePlan = pending.plan;
+            currentCustomer.Area = pending.area;
+
+            try {
+              fetch("/api/lead", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(pending)
+              });
+            } catch (leadErr) {
+              console.error("[Auto Lead Submit Error]", leadErr);
+            }
+          }
+
           localStorage.setItem("zaiqabox_customer_user", JSON.stringify(currentCustomer));
           localStorage.setItem("zaiqabox_customer_token", data.token);
           updateNavCustomerState();
@@ -901,6 +988,16 @@ function updateNavCustomerState() {
   const userNav = document.getElementById("userNavActions");
   const navName = document.getElementById("navUserName");
   const navTag = document.getElementById("navUserPlanTag");
+  const navAdminBtn = document.getElementById("navAdminPortalBtn");
+
+  // Show Admin Portal link in header nav if admin is signed in
+  if (navAdminBtn) {
+    if (localStorage.getItem("zaiqabox_admin_token") || localStorage.getItem("zaiqa_admin_token")) {
+      navAdminBtn.style.display = "inline-flex";
+    } else {
+      navAdminBtn.style.display = "none";
+    }
+  }
 
   if (currentCustomer && currentCustomer.FullName) {
     if (guestNav) guestNav.style.display = "none";
@@ -924,10 +1021,16 @@ function populateDashboardUI() {
   const addrInput = document.getElementById("dashNewAddressInput");
   const pauseBtn = document.getElementById("dashTogglePauseBtn");
   const waSupportBtn = document.getElementById("dashWhatsappSupportBtn");
+  const dashDownloadPdfBtn = document.getElementById("dashDownloadPdfBtn");
 
   if (nameEl) nameEl.textContent = currentCustomer.FullName;
   if (emailEl) emailEl.textContent = currentCustomer.Email;
   if (planEl) planEl.textContent = currentCustomer.ActivePlan || "Weekly Trial";
+
+  // Link PDF download button directly to nutrition guide asset
+  if (dashDownloadPdfBtn) {
+    dashDownloadPdfBtn.href = "assets/office_lunch_guide.pdf";
+  }
 
   const isPaused = (currentCustomer.SubscriptionStatus === "Paused");
   if (statusEl) {
