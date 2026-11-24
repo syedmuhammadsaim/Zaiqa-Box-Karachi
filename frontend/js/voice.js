@@ -52,6 +52,20 @@ class VoiceAssistant {
     this.userText = document.getElementById("voiceUserText");
     this.botCaption = document.getElementById("voiceBotCaption");
     this.botText = document.getElementById("voiceBotText");
+
+    // Section Voice Studio elements (Dedicated On-Page Section)
+    this.secToggleBtn = document.getElementById("secVoiceToggleBtn");
+    this.secEndBtn = document.getElementById("secVoiceEndBtn");
+    this.secVisualizer = document.getElementById("secVoiceVisualizer");
+    this.secAvatarCircle = document.getElementById("secVoiceAvatarCircle");
+    this.secStatusChip = document.getElementById("secVoiceStatusChip");
+    this.secStatusText = document.getElementById("secVoiceStatusText");
+    this.secUserCaption = document.getElementById("secVoiceUserCaption");
+    this.secUserText = document.getElementById("secVoiceUserText");
+    this.secBotCaption = document.getElementById("secVoiceBotCaption");
+    this.secBotText = document.getElementById("secVoiceBotText");
+    this.secBtnIcon = document.getElementById("secVoiceBtnIcon");
+    this.secBtnText = document.getElementById("secVoiceBtnText");
   }
 
   bindEvents() {
@@ -65,11 +79,46 @@ class VoiceAssistant {
 
     // Modal Open Buttons
     if (this.launcherBtn) {
-      this.launcherBtn.addEventListener("click", () => this.openModal());
+      this.launcherBtn.addEventListener("click", () => this.openModal(true));
     }
     if (this.faqVoiceBtn) {
-      this.faqVoiceBtn.addEventListener("click", () => this.openModal());
+      this.faqVoiceBtn.addEventListener("click", () => this.openModal(true));
     }
+
+    // Section Voice Studio Controls
+    if (this.secToggleBtn) {
+      this.secToggleBtn.addEventListener("click", () => {
+        if (this.isModalActive) {
+          this.closeModal();
+        } else {
+          this.openModal(false);
+        }
+      });
+    }
+    if (this.secAvatarCircle) {
+      this.secAvatarCircle.addEventListener("click", () => {
+        if (this.isModalActive) {
+          this.closeModal();
+        } else {
+          this.openModal(false);
+        }
+      });
+    }
+    if (this.secEndBtn) {
+      this.secEndBtn.addEventListener("click", () => this.closeModal());
+    }
+
+    // Suggested Prompt Pills
+    document.querySelectorAll(".voice-prompt-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        const text = pill.getAttribute("data-text");
+        if (text === "End call") {
+          this.handleVoiceEndCall();
+          return;
+        }
+        this.processDirectQuestion(text);
+      });
+    });
 
     // Modal Close / End Call Buttons
     if (this.closeModalBtn) {
@@ -89,13 +138,13 @@ class VoiceAssistant {
     }
   }
 
-  async openModal() {
+  async openModal(showBackdrop = true) {
     this.isModalActive = true;
     this.callAborted = false;
-    if (this.modal) {
+    if (showBackdrop && this.modal) {
       this.modal.classList.add("open");
     }
-    this.setModalState("connecting", "Connecting Call... (Microphone activating)");
+    this.setModalState("connecting", "Connecting Call... Speak now");
     trackEvent("voice_call_started");
 
     // Pre-unlock AudioContext & HTML5 audio on user interaction to guarantee audible playback
@@ -144,6 +193,7 @@ class VoiceAssistant {
     if (this.statusText) {
       this.statusText.textContent = "Call Ended";
     }
+    this.setModalState("idle", "Ready • Click Start Call to Speak");
     trackEvent("voice_call_ended");
   }
 
@@ -179,9 +229,17 @@ class VoiceAssistant {
       this.botText.textContent = "Call ended by voice command. Thank you for calling ZaiqaBox Karachi!";
       this.botCaption.style.display = "block";
     }
+    if (this.secBotCaption && this.secBotText) {
+      this.secBotText.textContent = "Call ended by voice command. Thank you for calling ZaiqaBox Karachi!";
+      this.secBotCaption.style.display = "block";
+    }
     if (this.userCaption && this.userText) {
       this.userText.textContent = '"End call"';
       this.userCaption.style.display = "block";
+    }
+    if (this.secUserCaption && this.secUserText) {
+      this.secUserText.textContent = '"End call"';
+      this.secUserCaption.style.display = "block";
     }
 
     setTimeout(() => {
@@ -190,32 +248,65 @@ class VoiceAssistant {
   }
 
   setModalState(state, customText) {
-    if (!this.visualizer) return;
-
-    this.visualizer.classList.remove("listening", "speaking");
+    if (this.visualizer) {
+      this.visualizer.classList.remove("listening", "speaking");
+    }
+    if (this.secVisualizer) {
+      this.secVisualizer.classList.remove("listening", "speaking");
+    }
 
     if (state === "listening") {
-      this.visualizer.classList.add("listening");
-      if (this.statusText) {
-        this.statusText.textContent = customText || "🟢 Listening... (Speak now)";
+      if (this.visualizer) this.visualizer.classList.add("listening");
+      if (this.secVisualizer) this.secVisualizer.classList.add("listening");
+      const txt = customText || "🟢 Listening... (Speak now)";
+      if (this.statusText) this.statusText.textContent = txt;
+      if (this.secStatusText) this.secStatusText.textContent = txt;
+
+      if (this.secToggleBtn) {
+        this.secToggleBtn.classList.add("is-active");
+        if (this.secBtnIcon) this.secBtnIcon.textContent = "🔴";
+        if (this.secBtnText) this.secBtnText.textContent = "End Call";
       }
+      if (this.secEndBtn) this.secEndBtn.style.display = "inline-block";
     } else if (state === "thinking") {
-      if (this.statusText) {
-        this.statusText.textContent = customText || "⏳ Thinking... (Preparing answer)";
-      }
+      const txt = customText || "⏳ Thinking... (Preparing answer)";
+      if (this.statusText) this.statusText.textContent = txt;
+      if (this.secStatusText) this.secStatusText.textContent = txt;
     } else if (state === "speaking") {
-      this.visualizer.classList.add("speaking");
-      if (this.statusText) {
-        this.statusText.textContent = customText || "🔊 ZaiqaBox AI Speaking...";
+      if (this.visualizer) this.visualizer.classList.add("speaking");
+      if (this.secVisualizer) this.secVisualizer.classList.add("speaking");
+      const txt = customText || "🔊 ZaiqaBox AI Speaking...";
+      if (this.statusText) this.statusText.textContent = txt;
+      if (this.secStatusText) this.secStatusText.textContent = txt;
+
+      if (this.secToggleBtn) {
+        this.secToggleBtn.classList.add("is-active");
+        if (this.secBtnIcon) this.secBtnIcon.textContent = "🔴";
+        if (this.secBtnText) this.secBtnText.textContent = "End Call";
       }
+      if (this.secEndBtn) this.secEndBtn.style.display = "inline-block";
     } else if (state === "connecting") {
-      if (this.statusText) {
-        this.statusText.textContent = customText || "Connecting Call...";
+      const txt = customText || "Connecting Call...";
+      if (this.statusText) this.statusText.textContent = txt;
+      if (this.secStatusText) this.secStatusText.textContent = txt;
+
+      if (this.secToggleBtn) {
+        this.secToggleBtn.classList.add("is-active");
+        if (this.secBtnIcon) this.secBtnIcon.textContent = "🔴";
+        if (this.secBtnText) this.secBtnText.textContent = "Connecting...";
       }
     } else {
-      if (this.statusText) {
-        this.statusText.textContent = customText || "🟢 Call Connected • Speak now";
+      // idle / ended
+      const txt = customText || "Ready • Click Start Call to Speak";
+      if (this.statusText) this.statusText.textContent = "Call Ended";
+      if (this.secStatusText) this.secStatusText.textContent = txt;
+
+      if (this.secToggleBtn) {
+        this.secToggleBtn.classList.remove("is-active");
+        if (this.secBtnIcon) this.secBtnIcon.textContent = "🎙️";
+        if (this.secBtnText) this.secBtnText.textContent = "Start Live Voice Call";
       }
+      if (this.secEndBtn) this.secEndBtn.style.display = "none";
     }
   }
 
@@ -581,13 +672,26 @@ class VoiceAssistant {
       const isHandoff = !!data.handoff;
       const audioBase64 = data.audio_base64 || "";
 
-      // 1. Update Captions in Modal
-      if (this.userCaption && this.userText && transcript) {
-        this.userText.textContent = `"${transcript}"`;
-        this.userCaption.style.display = "block";
+      // 1. Update Captions in Modal and Section
+      if (transcript) {
+        if (this.userCaption && this.userText) {
+          this.userText.textContent = `"${transcript}"`;
+          this.userCaption.style.display = "block";
+        }
+        if (this.secUserCaption && this.secUserText) {
+          this.secUserText.textContent = `"${transcript}"`;
+          this.secUserCaption.style.display = "block";
+        }
       }
-      if (this.botCaption && this.botText) {
-        this.botText.textContent = reply;
+      if (reply) {
+        if (this.botCaption && this.botText) {
+          this.botText.textContent = reply;
+          this.botCaption.style.display = "block";
+        }
+        if (this.secBotCaption && this.secBotText) {
+          this.secBotText.textContent = reply;
+          this.secBotCaption.style.display = "block";
+        }
       }
 
       // 2. Sync to Chat Widget
@@ -815,6 +919,55 @@ class VoiceAssistant {
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       if (this.isModalActive && !this.callAborted) this.startRecording(true);
+    }
+  }
+
+  async processDirectQuestion(questionText) {
+    if (!questionText) return;
+    this.stopPlaybackOnly();
+    this.isModalActive = true;
+    this.callAborted = false;
+
+    // Display user question
+    if (this.userCaption && this.userText) {
+      this.userText.textContent = `"${questionText}"`;
+      this.userCaption.style.display = "block";
+    }
+    if (this.secUserCaption && this.secUserText) {
+      this.secUserText.textContent = `"${questionText}"`;
+      this.secUserCaption.style.display = "block";
+    }
+
+    this.setModalState("thinking", "⚡ Thinking...");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: questionText })
+      });
+      const data = await response.json();
+      const reply = data.reply || "";
+      const audioBase64 = data.audio_base64 || "";
+
+      if (this.botCaption && this.botText) {
+        this.botText.textContent = reply;
+        this.botCaption.style.display = "block";
+      }
+      if (this.secBotCaption && this.secBotText) {
+        this.secBotText.textContent = reply;
+        this.secBotCaption.style.display = "block";
+      }
+
+      if (audioBase64) {
+        await this.playDeepgramAudio(audioBase64, reply);
+      } else if (reply) {
+        await this.speakText(reply);
+      } else {
+        this.startRecording(true);
+      }
+    } catch (e) {
+      this.startRecording(true);
     }
   }
 }

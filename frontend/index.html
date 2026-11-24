@@ -119,6 +119,7 @@
           <li><a href="#delivery" class="nav-link">Delivery</a></li>
           <li><a href="#why-us" class="nav-link">Why Us</a></li>
           <li><a href="#menu" class="nav-link">Weekly Menu</a></li>
+          <li><a href="#voice-agent" class="nav-link">Voice Agent</a></li>
           <li><a href="#faq" class="nav-link">FAQ</a></li>
           <li><a href="#lead-capture" class="nav-link">Free Guide</a></li>
           <li><a href="#contact" class="nav-link">Contact</a></li>
@@ -576,31 +577,116 @@
       <div class="faq-compliance-callout">
         <strong>Nutritional Compliance Note:</strong> For any medical or dietary questions, our human nutritionist will assist you. We do not provide clinical medical diets or weight-loss guarantees.
       </div>
+    </div>
+  </section>
 
-      <!-- Voice FAQ Interactive Demonstration Panel -->
-      <div class="voice-demo-card" id="voiceDemoCard">
-        <div class="voice-demo-header">
-          <div class="voice-demo-title">
-            <span>🎙️</span> AI Voice Assistant Workflow (Client Demo)
-          </div>
-          <button class="btn btn-primary btn-sm" id="openVoiceInChatBtn">
-            <span>💬</span> Try Voice Assistant Now
-          </button>
-        </div>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Our AI assistant listens in English or Roman Urdu, retrieves verified knowledge via RAG, enforces strict medical guardrails, and speaks back using Deepgram TTS:
+  <!-- 7.5 Dedicated AI Voice Agent Section -->
+  <section class="section voice-agent-section" id="voice-agent">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="section-tag" style="background: rgba(229, 169, 60, 0.2); color: #8A5805; font-weight: 700;">
+          🎙️ Live AI Voice Call &bull; Hands-Free
+        </span>
+        <h2 class="section-title">Talk With ZaiqaBox AI Voice Assistant</h2>
+        <p class="section-subtitle">
+          Real-time, two-way conversational voice assistant. Speak in Roman Urdu or English to check daily dishes, prices, nutrition macros, or delivery timings.
         </p>
-        <div class="voice-flow-diagram">
-          <div class="flow-step-node">1. Voice / Text Input<br><small>English / Roman Urdu</small></div>
-          <span class="flow-arrow">➔</span>
-          <div class="flow-step-node">2. Medical Guardrails<br><small>Strict escalation check</small></div>
-          <span class="flow-arrow">➔</span>
-          <div class="flow-step-node">3. BM25 RAG Context<br><small>Verified Client Facts</small></div>
-          <span class="flow-arrow">➔</span>
-          <div class="flow-step-node">4. Groq LLaMA 3.3<br><small>Precise factual response</small></div>
-          <span class="flow-arrow">➔</span>
-          <div class="flow-step-node">5. Deepgram TTS<br><small>Audio Playback</small></div>
+      </div>
+
+      <!-- Main Live Voice Agent Studio Console -->
+      <div class="voice-studio-container">
+        
+        <!-- Left Side: Interactive Live Call Interface -->
+        <div class="voice-studio-card">
+          <div class="voice-studio-header">
+            <div class="voice-studio-status-chip" id="secVoiceStatusChip">
+              <span class="pulse-dot"></span>
+              <span id="secVoiceStatusText">Ready &bull; Click Start Call to Speak</span>
+            </div>
+            <div class="voice-studio-lang-tag">
+              🗣️ Roman Urdu + English
+            </div>
+          </div>
+
+          <!-- Central Visualizer / Orb -->
+          <div class="voice-visualizer-container" id="secVoiceVisualizer" style="margin: 1.5rem auto;">
+            <div class="voice-pulse-ring ring-1"></div>
+            <div class="voice-pulse-ring ring-2"></div>
+            <div class="voice-pulse-ring ring-3"></div>
+            <div class="voice-avatar-circle" id="secVoiceAvatarCircle" style="cursor: pointer;" title="Click to Start / End Call">
+              <svg class="voice-avatar-svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Real-Time Dialogue Caption Bubble -->
+          <div class="voice-caption-box" id="secVoiceCaptionBox" style="margin-bottom: 1.25rem;">
+            <div class="voice-caption-line user-line" id="secVoiceUserCaption" style="display: none;">
+              <strong>👤 Aap:</strong> <span id="secVoiceUserText">...</span>
+            </div>
+            <div class="voice-caption-line bot-line" id="secVoiceBotCaption">
+              <strong>🍱 ZaiqaBox AI:</strong> <span id="secVoiceBotText">Assalam-o-Alaikum! Main ZaiqaBox AI Voice Assistant hoon. Aap mujhse Roman Urdu ya English me menu, plans ya delivery ke baray me kuch bhi poochh sakte hain.</span>
+            </div>
+          </div>
+
+          <!-- Primary Controls -->
+          <div class="voice-studio-controls">
+            <button type="button" class="btn btn-primary btn-lg voice-call-toggle-btn" id="secVoiceToggleBtn">
+              <span id="secVoiceBtnIcon">🎙️</span>
+              <span id="secVoiceBtnText">Start Live Voice Call</span>
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="secVoiceEndBtn" style="display: none; border-radius: 24px; padding: 10px 20px;">
+              🔴 End Call
+            </button>
+          </div>
+
+          <!-- Quick Spoken Suggestions / Prompts -->
+          <div class="voice-suggested-prompts">
+            <span class="prompt-hint">Tap any sample to ask:</span>
+            <div class="prompt-pills-row">
+              <button type="button" class="voice-prompt-pill" data-text="Kal lunch me konsi dish hai?">🍱 "Kal lunch me kya hai?"</button>
+              <button type="button" class="voice-prompt-pill" data-text="Weekly trial plan ki price kitni hai?">💰 "Weekly plan price?"</button>
+              <button type="button" class="voice-prompt-pill" data-text="Clifton aur DHA me delivery timing kya hai?">⏰ "Delivery timings?"</button>
+              <button type="button" class="voice-prompt-pill" data-text="End call">🔴 "End call"</button>
+            </div>
+          </div>
         </div>
+
+        <!-- Right Side: Architecture & Guardrail Highlights -->
+        <div class="voice-features-side">
+          <div class="voice-feature-item">
+            <div class="voice-feat-icon">⚡</div>
+            <div>
+              <h4 class="voice-feat-title">Real-Time Two-Way Audio</h4>
+              <p class="voice-feat-desc">Powered by Deepgram Nova-2 STT &amp; Aura TTS with ultra-low latency playback and hands-free automatic pause detection.</p>
+            </div>
+          </div>
+          <div class="voice-feature-item">
+            <div class="voice-feat-icon">🌐</div>
+            <div>
+              <h4 class="voice-feat-title">Bilingual Understanding</h4>
+              <p class="voice-feat-desc">Speak naturally in Pakistani Roman Urdu or standard English. The AI detects your language and speaks back in the exact same language.</p>
+            </div>
+          </div>
+          <div class="voice-feature-item">
+            <div class="voice-feat-icon">🛡️</div>
+            <div>
+              <h4 class="voice-feat-title">Strict Nutritionist Guardrails</h4>
+              <p class="voice-feat-desc">Enforces strict compliance. Never gives unauthorized medical or diabetic claims — escalates medical questions to our certified human nutritionist.</p>
+            </div>
+          </div>
+          <div class="voice-feature-item">
+            <div class="voice-feat-icon">📦</div>
+            <div>
+              <h4 class="voice-feat-title">Live Menu &amp; Delivery Knowledge</h4>
+              <p class="voice-feat-desc">Connected directly to our Karachi kitchen schedule for Clifton, DHA, and PECHS delivery windows and daily macro calculations.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>

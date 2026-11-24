@@ -3243,3 +3243,208 @@ body.splash-loading {
   color: var(--walnut);
   transform: translateY(-1px);
 }
+
+
+/* ==========================================================================
+   DEDICATED AI VOICE AGENT SECTION & ON-PAGE STUDIO INTERFACE
+   ========================================================================== */
+.voice-agent-section {
+  background: linear-gradient(180deg, #FDFBF7 0%, #F5ECE0 100%);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 4rem 0;
+}
+
+.voice-studio-container {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 2rem;
+  align-items: start;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.voice-studio-card {
+  background: #FFFFFF;
+  border: 2px solid var(--accent);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 16px 40px rgba(45, 24, 16, 0.08);
+  position: relative;
+  text-align: center;
+}
+
+.voice-studio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 1rem;
+  border-bottom: 1.5px solid #F3F4F6;
+}
+
+.voice-studio-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--walnut);
+}
+
+.voice-studio-status-chip .pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  animation: voicePulseDot 1.8s infinite;
+}
+
+@keyframes voicePulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.voice-studio-lang-tag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(229, 169, 60, 0.15);
+  color: #8A5805;
+  padding: 4px 12px;
+  border-radius: 14px;
+}
+
+.voice-studio-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.voice-call-toggle-btn {
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 18px rgba(229, 169, 60, 0.35);
+  transition: all 0.2s ease;
+}
+
+.voice-call-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(229, 169, 60, 0.45);
+}
+
+.voice-call-toggle-btn.is-active {
+  background: #DC2626;
+  border-color: #DC2626;
+  color: #FFFFFF;
+  box-shadow: 0 4px 18px rgba(220, 38, 38, 0.35);
+}
+
+.voice-call-toggle-btn.is-active:hover {
+  background: #B91C1C;
+  border-color: #B91C1C;
+}
+
+.voice-suggested-prompts {
+  text-align: left;
+  border-top: 1.5px solid #F3F4F6;
+  padding-top: 1rem;
+}
+
+.voice-suggested-prompts .prompt-hint {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.prompt-pills-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.voice-prompt-pill {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.voice-prompt-pill:hover {
+  background: var(--bg-cream);
+  border-color: var(--accent);
+  color: var(--walnut);
+  transform: translateY(-1px);
+}
+
+.voice-features-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.voice-feature-item {
+  background: #FFFFFF;
+  border: 1.5px solid #F1E5D8;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.voice-feature-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(229, 169, 60, 0.08);
+}
+
+.voice-feat-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.voice-feat-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--walnut);
+}
+
+.voice-feat-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #555555;
+  line-height: 1.5;
+}
+
+@media (max-width: 860px) {
+  .voice-studio-container {
+    grid-template-columns: 1fr;
+  }
+}

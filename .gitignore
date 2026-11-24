@@ -11,3 +11,5 @@ test_transparent_logo.png
 .idea/
 venv/
 env/
+ngrok.exe
+screenshots/
